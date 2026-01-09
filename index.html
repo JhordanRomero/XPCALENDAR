@@ -70,6 +70,14 @@
             to { transform: translateX(0); opacity: 1; }
         }
         .toast-enter { animation: slideIn 0.3s ease-out forwards; }
+
+        /* Modal Animation */
+        .modal-enter {
+            opacity: 1 !important;
+        }
+        .modal-content-enter {
+            transform: scale(1) !important;
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden text-slate-800">
@@ -155,7 +163,7 @@
                         </button>
                     </div>
 
-                    <button onclick="addNewTask()" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-md hover:shadow-lg active:scale-95 whitespace-nowrap">
+                    <button onclick="openTaskModal()" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-md hover:shadow-lg active:scale-95 whitespace-nowrap">
                         <i data-lucide="plus" class="w-4 h-4"></i> <span class="hidden lg:inline">Nueva Tarea</span>
                     </button>
                 </div>
@@ -164,14 +172,101 @@
     </header>
 
     <!-- MAIN CONTENT -->
-    <main class="flex-1 overflow-hidden bg-slate-50 relative">
-        <div id="app-container" class="max-w-7xl mx-auto h-full flex flex-col relative p-4 sm:p-6">
+    <main class="flex-1 overflow-y-auto bg-slate-50 relative custom-scrollbar">
+        <div id="app-container" class="max-w-7xl mx-auto flex flex-col relative p-4 sm:p-6 pb-20">
             <!-- Content Injected Here -->
         </div>
     </main>
 
     <!-- TOAST CONTAINER -->
     <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- CREATE TASK MODAL -->
+    <div id="task-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform scale-95 transition-transform duration-200" id="task-modal-content">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
+                    <i data-lucide="plus-circle" class="w-5 h-5 text-indigo-600"></i> Nueva Tarea
+                </h3>
+                <button onclick="closeTaskModal()" class="text-slate-400 hover:text-red-500 transition-colors bg-white rounded-full p-1 hover:bg-red-50">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 space-y-5">
+                <!-- Row 1 -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Cliente</label>
+                        <div class="relative">
+                            <select id="modal-client" class="w-full border border-slate-200 rounded-lg pl-3 pr-8 py-2.5 text-sm font-medium text-slate-700 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all appearance-none cursor-pointer">
+                                <option value="Ripley">Ripley</option>
+                                <option value="Walmart">Walmart</option>
+                                <option value="Metlife">Metlife</option>
+                                <option value="Scheckers">Scheckers</option>
+                                <option value="Parque R.">Parque R.</option>
+                                <option value="Equipo XP">Equipo XP</option>
+                                <option value="General">General</option>
+                            </select>
+                            <i data-lucide="chevron-down" class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"></i>
+                        </div>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Área</label>
+                        <div class="relative">
+                            <select id="modal-area" class="w-full border border-slate-200 rounded-lg pl-3 pr-8 py-2.5 text-sm font-medium text-slate-700 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all appearance-none cursor-pointer">
+                                <option value="Diseño">🎨 Diseño</option>
+                                <option value="AudioVisual">🎥 AudioVisual</option>
+                            </select>
+                            <i data-lucide="chevron-down" class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Row 2 -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Programa / Tarea <span class="text-red-500">*</span></label>
+                    <input type="text" id="modal-program" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="Ej: Video Campaña Navidad">
+                </div>
+
+                <!-- Row 3 -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Detalles</label>
+                    <textarea id="modal-detail" rows="2" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-600 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none resize-none transition-all" placeholder="Descripción breve..."></textarea>
+                </div>
+
+                <!-- Row 4 -->
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Inicio</label>
+                        <input type="date" id="modal-date" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Días</label>
+                        <input type="number" id="modal-duration" value="3" min="1" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Prioridad</label>
+                        <div class="relative">
+                            <select id="modal-priority" class="w-full border border-slate-200 rounded-lg pl-3 pr-8 py-2 text-sm font-medium text-slate-700 bg-white focus:ring-2 focus:ring-indigo-500 outline-none appearance-none cursor-pointer">
+                                <option value="Alta">🔴 Alta</option>
+                                <option value="Media" selected>🟡 Media</option>
+                                <option value="Baja">🟢 Baja</option>
+                            </select>
+                            <i data-lucide="chevron-down" class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                <button onclick="closeTaskModal()" class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-200 rounded-lg transition-colors">Cancelar</button>
+                <button onclick="saveNewTask()" class="px-6 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-md hover:shadow-lg transform active:scale-95 transition-all flex items-center gap-2">
+                    <i data-lucide="check" class="w-4 h-4"></i> Crear Tarea
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- CONTEXT MENU -->
     <div id="context-menu" class="hidden fixed bg-white rounded-lg shadow-xl border border-slate-200 w-48 py-1.5 z-50 ring-1 ring-slate-900/5">
@@ -402,7 +497,7 @@
         }
 
         function renderGrid(container, tasks) {
-            container.className = "max-w-7xl mx-auto h-full flex flex-col";
+            container.className = "max-w-7xl mx-auto flex flex-col";
             const gridDiv = document.createElement('div');
             
             // Grid Cols Logic based on Zoom Level
@@ -414,7 +509,8 @@
             if(z === 4) gridCols = "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4";
             if(z === 5) gridCols = "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5";
 
-            gridDiv.className = `grid gap-6 overflow-y-auto pb-20 ${gridCols} pr-2 custom-scrollbar content-start flex-1 w-full`;
+            // Removed h-full and overflow from here, let main scroll
+            gridDiv.className = `grid gap-6 ${gridCols} w-full content-start`;
             
             tasks.forEach(task => {
                 const card = document.createElement('div');
@@ -461,9 +557,10 @@
         }
 
         function renderList(container, tasks) {
-            container.className = "max-w-7xl mx-auto h-full flex flex-col";
+            container.className = "max-w-7xl mx-auto flex flex-col";
             const listDiv = document.createElement('div');
-            listDiv.className = "flex flex-col gap-3 overflow-y-auto pb-20 pr-2 custom-scrollbar flex-1 w-full";
+            // Removed h-full and overflow from here, let main scroll
+            listDiv.className = "flex flex-col gap-3 w-full";
             
             tasks.forEach(task => {
                 const item = document.createElement('div');
@@ -514,11 +611,12 @@
         }
 
         function renderCalendar(container, tasks) {
-            container.className = "max-w-7xl mx-auto h-full flex flex-col";
+            container.className = "max-w-7xl mx-auto flex flex-col";
             const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
             
             const wrapper = document.createElement('div');
-            wrapper.className = "bg-white rounded-xl shadow-sm border border-slate-200 h-full flex flex-col overflow-hidden";
+            // Remove h-full and overflow hidden so it grows naturally
+            wrapper.className = "bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden";
 
             const header = document.createElement('div');
             header.className = "p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50";
@@ -540,7 +638,8 @@
             });
             
             const gridBody = document.createElement('div');
-            gridBody.className = "grid grid-cols-7 auto-rows-fr flex-1 overflow-y-auto custom-scrollbar min-h-0 bg-slate-50/30";
+            // Remove fixed height related classes
+            gridBody.className = "grid grid-cols-7 bg-slate-50/30";
             wrapper.appendChild(gridHeader);
             wrapper.appendChild(gridBody);
 
@@ -557,7 +656,8 @@
 
             for (let i = 0; i < totalSlots; i++) {
                 const cell = document.createElement('div');
-                cell.className = "min-h-[120px] border-b border-r border-slate-100/80 p-1.5 flex flex-col gap-1 transition-colors hover:bg-white";
+                // Increased min-height to 140px for "full" look
+                cell.className = "min-h-[140px] border-b border-r border-slate-100/80 p-1.5 flex flex-col gap-1 transition-colors hover:bg-white";
                 
                 if (i >= startingDay && dayCounter <= lastDay.getDate()) {
                     let d = dayCounter;
@@ -592,11 +692,12 @@
         }
 
         function renderGantt(container, filteredTasks) {
-            container.className = "max-w-7xl mx-auto h-full flex flex-col gap-4 pb-10";
+            container.className = "max-w-7xl mx-auto flex flex-col gap-6 pb-10";
             
             // Editor
             const editorDiv = document.createElement('div');
-            editorDiv.className = "bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden relative z-10 h-[40%] min-h-[300px]";
+            // Fixed height 450px for the editor panel
+            editorDiv.className = "bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden relative h-[450px] shrink-0";
             
             editorDiv.innerHTML = `
                 <div class="px-5 py-3 bg-slate-50 border-b border-slate-200 font-semibold text-slate-700 text-sm flex items-center gap-2">
@@ -660,7 +761,8 @@
 
             // Visual Timeline
             const visualDiv = document.createElement('div');
-            visualDiv.className = "bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col flex-1 overflow-hidden relative z-0 min-h-[300px]";
+            // Fixed height 500px for the visual timeline panel
+            visualDiv.className = "bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden relative h-[500px] shrink-0";
             visualDiv.innerHTML = `<div class="px-5 py-3 bg-slate-50 border-b border-slate-200 font-semibold text-slate-700 text-sm flex items-center gap-2 shrink-0"><i data-lucide="bar-chart-3" class="w-4 h-4 text-slate-400"></i> Cronograma Visual</div>`;
 
             const flexContainer = document.createElement('div');
@@ -771,28 +873,74 @@
         function handleSort(val) { state.sortBy = val; renderApp(); }
         function handleZoom(val) { state.zoomLevel = parseInt(val); renderApp(); }
 
-        function addNewTask() {
+        // --- MODAL LOGIC ---
+        function openTaskModal() {
+            const modal = document.getElementById('task-modal');
+            const content = document.getElementById('task-modal-content');
+            
+            // Set default date to today
+            document.getElementById('modal-date').valueAsDate = new Date();
+            
+            // Show modal with animation
+            modal.classList.remove('hidden');
+            // Small timeout to allow browser render for transition
+            setTimeout(() => {
+                modal.classList.add('modal-enter');
+                content.classList.add('modal-content-enter');
+            }, 10);
+        }
+
+        function closeTaskModal() {
+            const modal = document.getElementById('task-modal');
+            const content = document.getElementById('task-modal-content');
+            
+            modal.classList.remove('modal-enter');
+            content.classList.remove('modal-content-enter');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                // Reset form
+                document.getElementById('modal-program').value = '';
+                document.getElementById('modal-detail').value = '';
+                document.getElementById('modal-duration').value = '3';
+                document.getElementById('modal-client').selectedIndex = 0;
+                document.getElementById('modal-area').selectedIndex = 0;
+                document.getElementById('modal-priority').selectedIndex = 1; // Media default
+            }, 200);
+        }
+
+        function saveNewTask() {
+            const program = document.getElementById('modal-program').value.trim();
+            if (!program) {
+                alert('Por favor ingrese un nombre para la tarea');
+                return;
+            }
+
             const newTask = {
                 id: Date.now(),
-                area: 'Diseño',
-                client: 'Nuevo Cliente',
-                program: 'Nueva Tarea',
-                detail: 'Detalle de la tarea...',
-                date: new Date().toISOString().split('T')[0],
-                duration: 3,
-                priority: 'Media',
+                client: document.getElementById('modal-client').value,
+                area: document.getElementById('modal-area').value,
+                program: program,
+                detail: document.getElementById('modal-detail').value,
+                date: document.getElementById('modal-date').value || new Date().toISOString().split('T')[0],
+                duration: parseInt(document.getElementById('modal-duration').value) || 1,
+                priority: document.getElementById('modal-priority').value,
                 completed: false,
                 createdAt: Date.now()
             };
+
             tasks.push(newTask);
             saveTasks();
             
-            // Auto switch to 'recent' sort to show the new task
+            // Auto switch to 'recent' sort to show the new task first
             state.sortBy = 'recent';
+            
+            closeTaskModal();
             renderApp();
             showToast('Tarea creada exitosamente');
         }
 
+        // --- EXISTING ACTIONS ---
         window.updateTask = function(id, field, value) {
             const task = tasks.find(t => t.id === id);
             if(task) {
