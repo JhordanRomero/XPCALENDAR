@@ -164,8 +164,8 @@
     </header>
 
     <!-- MAIN CONTENT -->
-    <main class="flex-1 overflow-hidden bg-slate-50 relative">
-        <div id="app-container" class="max-w-7xl mx-auto h-full flex flex-col relative p-4 sm:p-6">
+    <main class="flex-1 overflow-y-auto bg-slate-50 relative custom-scrollbar">
+        <div id="app-container" class="max-w-7xl mx-auto flex flex-col relative p-4 sm:p-6 pb-20">
             <!-- Content Injected Here -->
         </div>
     </main>
@@ -402,7 +402,7 @@
         }
 
         function renderGrid(container, tasks) {
-            container.className = "max-w-7xl mx-auto h-full flex flex-col";
+            container.className = "max-w-7xl mx-auto flex flex-col";
             const gridDiv = document.createElement('div');
             
             // Grid Cols Logic based on Zoom Level
@@ -414,7 +414,8 @@
             if(z === 4) gridCols = "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4";
             if(z === 5) gridCols = "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5";
 
-            gridDiv.className = `grid gap-6 overflow-y-auto pb-20 ${gridCols} pr-2 custom-scrollbar content-start flex-1 w-full`;
+            // Removed h-full and overflow from here, let main scroll
+            gridDiv.className = `grid gap-6 ${gridCols} w-full content-start`;
             
             tasks.forEach(task => {
                 const card = document.createElement('div');
@@ -461,9 +462,10 @@
         }
 
         function renderList(container, tasks) {
-            container.className = "max-w-7xl mx-auto h-full flex flex-col";
+            container.className = "max-w-7xl mx-auto flex flex-col";
             const listDiv = document.createElement('div');
-            listDiv.className = "flex flex-col gap-3 overflow-y-auto pb-20 pr-2 custom-scrollbar flex-1 w-full";
+            // Removed h-full and overflow from here, let main scroll
+            listDiv.className = "flex flex-col gap-3 w-full";
             
             tasks.forEach(task => {
                 const item = document.createElement('div');
@@ -514,11 +516,12 @@
         }
 
         function renderCalendar(container, tasks) {
-            container.className = "max-w-7xl mx-auto h-full flex flex-col";
+            container.className = "max-w-7xl mx-auto flex flex-col";
             const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
             
             const wrapper = document.createElement('div');
-            wrapper.className = "bg-white rounded-xl shadow-sm border border-slate-200 h-full flex flex-col overflow-hidden";
+            // Remove h-full and overflow hidden so it grows naturally
+            wrapper.className = "bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden";
 
             const header = document.createElement('div');
             header.className = "p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50";
@@ -540,7 +543,8 @@
             });
             
             const gridBody = document.createElement('div');
-            gridBody.className = "grid grid-cols-7 auto-rows-fr flex-1 overflow-y-auto custom-scrollbar min-h-0 bg-slate-50/30";
+            // Remove fixed height related classes
+            gridBody.className = "grid grid-cols-7 bg-slate-50/30";
             wrapper.appendChild(gridHeader);
             wrapper.appendChild(gridBody);
 
@@ -557,7 +561,8 @@
 
             for (let i = 0; i < totalSlots; i++) {
                 const cell = document.createElement('div');
-                cell.className = "min-h-[120px] border-b border-r border-slate-100/80 p-1.5 flex flex-col gap-1 transition-colors hover:bg-white";
+                // Increased min-height to 140px for "full" look
+                cell.className = "min-h-[140px] border-b border-r border-slate-100/80 p-1.5 flex flex-col gap-1 transition-colors hover:bg-white";
                 
                 if (i >= startingDay && dayCounter <= lastDay.getDate()) {
                     let d = dayCounter;
@@ -592,11 +597,12 @@
         }
 
         function renderGantt(container, filteredTasks) {
-            container.className = "max-w-7xl mx-auto h-full flex flex-col gap-4 pb-10";
+            container.className = "max-w-7xl mx-auto flex flex-col gap-6 pb-10";
             
             // Editor
             const editorDiv = document.createElement('div');
-            editorDiv.className = "bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden relative z-10 h-[40%] min-h-[300px]";
+            // Fixed height 450px for the editor panel
+            editorDiv.className = "bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden relative h-[450px] shrink-0";
             
             editorDiv.innerHTML = `
                 <div class="px-5 py-3 bg-slate-50 border-b border-slate-200 font-semibold text-slate-700 text-sm flex items-center gap-2">
@@ -660,7 +666,8 @@
 
             // Visual Timeline
             const visualDiv = document.createElement('div');
-            visualDiv.className = "bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col flex-1 overflow-hidden relative z-0 min-h-[300px]";
+            // Fixed height 500px for the visual timeline panel
+            visualDiv.className = "bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden relative h-[500px] shrink-0";
             visualDiv.innerHTML = `<div class="px-5 py-3 bg-slate-50 border-b border-slate-200 font-semibold text-slate-700 text-sm flex items-center gap-2 shrink-0"><i data-lucide="bar-chart-3" class="w-4 h-4 text-slate-400"></i> Cronograma Visual</div>`;
 
             const flexContainer = document.createElement('div');
