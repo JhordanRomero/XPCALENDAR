@@ -214,8 +214,7 @@
             { id: 36, area: 'AudioVisual', client: 'Ripley', program: 'Impacto Anual', detail: 'Video cierre programa, material recopilatorio', date: '2026-11-01', duration: 7, priority: 'Baja', completed: false }
         ];
 
-        let tasks = JSON.parse(localStorage.getItem('creativeTasks_2026_pro')) || INITIAL_TASKS;
-        // Simple migrate check
+        let tasks = JSON.parse(localStorage.getItem('creativeTasks_2026_v4')) || INITIAL_TASKS;
         if(tasks.length < 5) tasks = INITIAL_TASKS;
 
         let state = {
@@ -227,7 +226,7 @@
             activeMenuTaskId: null
         };
 
-        const saveTasks = () => localStorage.setItem('creativeTasks_2026_pro', JSON.stringify(tasks));
+        const saveTasks = () => localStorage.setItem('creativeTasks_2026_v4', JSON.stringify(tasks));
 
         // --- HELPERS ---
         const addDays = (dateStr, days) => {
@@ -251,22 +250,24 @@
         };
 
         const getClientColor = (c) => {
-            if(c.includes('Ripley')) return 'bg-violet-600';
-            if(c.includes('Walmart')) return 'bg-blue-600';
-            if(c.includes('Metlife')) return 'bg-sky-500';
-            if(c.includes('Scheckers')) return 'bg-indigo-500';
-            if(c.includes('Parque')) return 'bg-emerald-600';
-            if(c.includes('XP')) return 'bg-pink-500';
+            const safeClient = c || 'General';
+            if(safeClient.includes('Ripley')) return 'bg-violet-600';
+            if(safeClient.includes('Walmart')) return 'bg-blue-600';
+            if(safeClient.includes('Metlife')) return 'bg-sky-500';
+            if(safeClient.includes('Scheckers')) return 'bg-indigo-500';
+            if(safeClient.includes('Parque')) return 'bg-emerald-600';
+            if(safeClient.includes('XP')) return 'bg-pink-500';
             return 'bg-slate-500';
         };
 
         const getClientBadge = (c) => {
-            if(c.includes('Ripley')) return 'bg-violet-50 text-violet-700 ring-1 ring-violet-200';
-            if(c.includes('Walmart')) return 'bg-blue-50 text-blue-700 ring-1 ring-blue-200';
-            if(c.includes('Metlife')) return 'bg-sky-50 text-sky-700 ring-1 ring-sky-200';
-            if(c.includes('Scheckers')) return 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200';
-            if(c.includes('Parque')) return 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200';
-            if(c.includes('XP')) return 'bg-pink-50 text-pink-700 ring-1 ring-pink-200';
+            const safeClient = c || 'General';
+            if(safeClient.includes('Ripley')) return 'bg-violet-50 text-violet-700 ring-1 ring-violet-200';
+            if(safeClient.includes('Walmart')) return 'bg-blue-50 text-blue-700 ring-1 ring-blue-200';
+            if(safeClient.includes('Metlife')) return 'bg-sky-50 text-sky-700 ring-1 ring-sky-200';
+            if(safeClient.includes('Scheckers')) return 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200';
+            if(safeClient.includes('Parque')) return 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200';
+            if(safeClient.includes('XP')) return 'bg-pink-50 text-pink-700 ring-1 ring-pink-200';
             return 'bg-slate-100 text-slate-700 ring-1 ring-slate-200';
         };
 
@@ -275,9 +276,13 @@
                 const matchArea = state.filterArea === 'Todas' || t.area === state.filterArea;
                 const matchPriority = state.filterPriority === 'Todas' || t.priority === state.filterPriority;
                 const search = state.searchTerm.toLowerCase();
-                const matchSearch = t.client.toLowerCase().includes(search) || 
-                                    t.program.toLowerCase().includes(search) || 
-                                    t.detail.toLowerCase().includes(search);
+                const safeClient = (t.client || '').toLowerCase();
+                const safeProgram = (t.program || '').toLowerCase();
+                const safeDetail = (t.detail || '').toLowerCase();
+                
+                const matchSearch = safeClient.includes(search) || 
+                                    safeProgram.includes(search) || 
+                                    safeDetail.includes(search);
                 return matchArea && matchPriority && matchSearch;
             }).sort((a,b) => new Date(a.date) - new Date(b.date));
         };
@@ -344,14 +349,16 @@
         function renderGrid(container, tasks) {
             container.className = "max-w-7xl mx-auto h-full flex flex-col";
             const gridDiv = document.createElement('div');
-            gridDiv.className = "grid gap-6 overflow-y-auto pb-20 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 pr-2 custom-scrollbar content-start";
+            // Changed: Added flex-1 and h-full to gridDiv to ensure it takes space and scrolls
+            // Changed: content-start to align content at the top
+            gridDiv.className = "grid gap-6 overflow-y-auto pb-20 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 pr-2 custom-scrollbar content-start flex-1 w-full";
             
             tasks.forEach(task => {
                 const card = document.createElement('div');
-                card.className = "group bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-lg hover:border-indigo-100 hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden relative";
+                card.className = "group bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-lg hover:border-indigo-100 hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden relative min-h-[220px]";
                 card.innerHTML = `
                     <div class="h-1.5 w-full ${getClientColor(task.client)}"></div>
-                    <div class="p-5 flex-1 flex flex-col h-full">
+                    <div class="p-5 flex-1 flex flex-col">
                         <div class="flex justify-between items-start mb-3">
                              <div class="flex items-center gap-2">
                                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${getPriorityColor(task.priority)}">${task.priority}</span>
@@ -364,10 +371,10 @@
                         
                         <div class="flex-1">
                             <h3 class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
-                                ${task.client}
+                                ${task.client || 'General'}
                             </h3>
-                            <h2 class="text-base font-bold text-slate-800 leading-snug mb-2 group-hover:text-indigo-600 transition-colors">${task.program}</h2>
-                            <p class="text-xs text-slate-500 leading-relaxed">${task.detail}</p>
+                            <h2 class="text-base font-bold text-slate-800 leading-snug mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2">${task.program}</h2>
+                            <p class="text-xs text-slate-500 leading-relaxed line-clamp-3">${task.detail || ''}</p>
                         </div>
 
                         <div class="flex items-center justify-between text-xs text-slate-400 mt-4 pt-4 border-t border-slate-50">
@@ -387,7 +394,7 @@
         function renderList(container, tasks) {
             container.className = "max-w-7xl mx-auto h-full flex flex-col";
             const listDiv = document.createElement('div');
-            listDiv.className = "flex flex-col gap-3 overflow-y-auto pb-20 pr-2 custom-scrollbar";
+            listDiv.className = "flex flex-col gap-3 overflow-y-auto pb-20 pr-2 custom-scrollbar flex-1 w-full";
             
             tasks.forEach(task => {
                 const item = document.createElement('div');
@@ -407,7 +414,7 @@
                         </div>
                         
                         <div class="flex-1 min-w-[200px]">
-                            <h3 class="text-[10px] font-bold uppercase text-slate-400 mb-0.5">${task.client}</h3>
+                            <h3 class="text-[10px] font-bold uppercase text-slate-400 mb-0.5">${task.client || 'General'}</h3>
                             <input type="text" value="${task.program}" onchange="updateTask(${task.id}, 'program', this.value)" 
                                 class="w-full text-sm font-bold text-slate-800 bg-transparent input-ghost rounded px-1 -ml-1 ${task.completed ? 'line-through text-slate-400' : ''}">
                         </div>
@@ -553,7 +560,7 @@
                     </div>
                     <div class="border-r border-slate-100 h-full px-2 py-1 flex items-center ${task.completed ? 'opacity-50 grayscale' : ''}">
                          <div class="w-full h-7 px-2 rounded-md flex items-center justify-center text-[10px] font-bold truncate ${getClientBadge(task.client)}">
-                             ${task.client}
+                             ${task.client || 'General'}
                          </div>
                     </div>
                     <div class="border-r border-slate-100 h-full px-3 py-1 flex items-center ${task.completed ? 'opacity-50 line-through text-slate-400' : ''}">
