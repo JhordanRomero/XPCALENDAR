@@ -18,9 +18,9 @@
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
         
         /* Custom Scrollbar */
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; border: 2px solid #f1f5f9; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         
         /* Hide scrollbar for clean inputs */
@@ -41,6 +41,29 @@
             padding-left: 4px;
         }
 
+        /* Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none; 
+            background: transparent; 
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #4f46e5;
+            cursor: pointer;
+            margin-top: -6px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #e2e8f0;
+            border-radius: 2px;
+        }
+
         /* Toast Animation */
         @keyframes slideIn {
             from { transform: translateX(100%); opacity: 0; }
@@ -52,7 +75,7 @@
 <body class="h-screen flex flex-col overflow-hidden text-slate-800">
 
     <!-- HEADER -->
-    <header class="bg-white/80 backdrop-blur-md border-b border-slate-200 shrink-0 z-30 sticky top-0">
+    <header class="bg-white/90 backdrop-blur-md border-b border-slate-200 shrink-0 z-30 sticky top-0 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex items-center gap-3">
@@ -74,55 +97,66 @@
             <div class="mt-4 flex flex-col xl:flex-row gap-4 justify-between items-center border-t border-slate-100 pt-3">
                 <div class="flex flex-col sm:flex-row gap-2 w-full xl:w-auto items-center">
                     <!-- Search -->
-                    <div class="relative w-full sm:w-64 group">
+                    <div class="relative w-full sm:w-56 group">
                         <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 group-focus-within:text-indigo-500 transition-colors"></i>
                         <input type="text" id="search-input" oninput="handleSearch(this.value)" 
                             class="block w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all" 
-                            placeholder="Buscar tarea, cliente...">
+                            placeholder="Buscar...">
                     </div>
                     
+                    <!-- Order By -->
+                    <div class="relative w-full sm:w-auto">
+                        <i data-lucide="arrow-up-down" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 w-3.5 h-3.5"></i>
+                        <select id="sort-by" onchange="handleSort(this.value)" class="block pl-8 pr-8 py-1.5 text-sm bg-white border border-slate-200 rounded-lg focus:ring-indigo-500 outline-none cursor-pointer hover:bg-slate-50 w-full">
+                            <option value="date">📅 Por Fecha</option>
+                            <option value="recent">✨ Recientes</option>
+                        </select>
+                    </div>
+
                     <!-- Filters -->
                     <div class="flex gap-2 w-full sm:w-auto">
-                        <div class="relative">
-                            <i data-lucide="filter" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 w-3.5 h-3.5"></i>
-                            <select id="filter-area" onchange="handleFilterArea(this.value)" class="block pl-8 pr-8 py-1.5 text-sm bg-white border border-slate-200 rounded-lg focus:ring-indigo-500 outline-none cursor-pointer hover:bg-slate-50">
-                                <option value="Todas">Todas las Áreas</option>
-                                <option value="Diseño">🎨 Diseño</option>
-                                <option value="AudioVisual">🎥 Audiovisual</option>
-                            </select>
-                        </div>
+                        <select id="filter-area" onchange="handleFilterArea(this.value)" class="block px-3 py-1.5 text-sm bg-white border border-slate-200 rounded-lg focus:ring-indigo-500 outline-none cursor-pointer hover:bg-slate-50">
+                            <option value="Todas">Todas las Áreas</option>
+                            <option value="Diseño">🎨 Diseño</option>
+                            <option value="AudioVisual">🎥 Audiovisual</option>
+                        </select>
                         
-                        <div class="relative">
-                            <i data-lucide="flag" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 w-3.5 h-3.5"></i>
-                            <select id="filter-priority" onchange="handleFilterPriority(this.value)" class="block pl-8 pr-8 py-1.5 text-sm bg-white border border-slate-200 rounded-lg focus:ring-indigo-500 outline-none cursor-pointer hover:bg-slate-50">
-                                <option value="Todas">Prioridad</option>
-                                <option value="Alta">🔴 Alta</option>
-                                <option value="Media">🟡 Media</option>
-                                <option value="Baja">🟢 Baja</option>
-                            </select>
-                        </div>
+                        <select id="filter-priority" onchange="handleFilterPriority(this.value)" class="block px-3 py-1.5 text-sm bg-white border border-slate-200 rounded-lg focus:ring-indigo-500 outline-none cursor-pointer hover:bg-slate-50">
+                            <option value="Todas">Prioridad</option>
+                            <option value="Alta">🔴 Alta</option>
+                            <option value="Media">🟡 Media</option>
+                            <option value="Baja">🟢 Baja</option>
+                        </select>
                     </div>
                 </div>
 
                 <div class="flex gap-3 items-center w-full sm:w-auto justify-between sm:justify-end">
+                    
+                    <!-- Zoom Control (Only visible in Grid View) -->
+                    <div id="zoom-control" class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg mr-2">
+                        <i data-lucide="zoom-out" class="w-3 h-3 text-slate-400"></i>
+                        <input type="range" min="1" max="5" value="3" class="w-20 accent-indigo-600" oninput="handleZoom(this.value)" title="Zoom de tarjetas">
+                        <i data-lucide="zoom-in" class="w-3 h-3 text-slate-400"></i>
+                    </div>
+
                     <!-- View Switcher -->
                     <div class="flex bg-slate-100/80 p-1 rounded-lg border border-slate-200">
-                        <button onclick="setView('grid')" id="btn-grid" class="view-btn flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all text-slate-500 hover:text-slate-700">
+                        <button onclick="setView('grid')" id="btn-grid" class="view-btn flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all text-slate-500 hover:text-slate-700" title="Vista Tablero">
                             <i data-lucide="layout-grid" class="w-4 h-4"></i>
                         </button>
-                        <button onclick="setView('list')" id="btn-list" class="view-btn flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all text-slate-500 hover:text-slate-700">
+                        <button onclick="setView('list')" id="btn-list" class="view-btn flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all text-slate-500 hover:text-slate-700" title="Vista Lista">
                             <i data-lucide="list" class="w-4 h-4"></i>
                         </button>
-                        <button onclick="setView('calendar')" id="btn-calendar" class="view-btn flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all text-slate-500 hover:text-slate-700">
+                        <button onclick="setView('calendar')" id="btn-calendar" class="view-btn flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all text-slate-500 hover:text-slate-700" title="Vista Calendario">
                             <i data-lucide="calendar-days" class="w-4 h-4"></i>
                         </button>
-                        <button onclick="setView('gantt')" id="btn-gantt" class="view-btn flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all text-slate-500 hover:text-slate-700">
+                        <button onclick="setView('gantt')" id="btn-gantt" class="view-btn flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all text-slate-500 hover:text-slate-700" title="Vista Gantt">
                             <i data-lucide="gantt-chart-square" class="w-4 h-4"></i>
                         </button>
                     </div>
 
-                    <button onclick="addNewTask()" class="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-md hover:shadow-lg active:scale-95">
-                        <i data-lucide="plus" class="w-4 h-4"></i> <span class="hidden sm:inline">Nueva Tarea</span>
+                    <button onclick="addNewTask()" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-md hover:shadow-lg active:scale-95 whitespace-nowrap">
+                        <i data-lucide="plus" class="w-4 h-4"></i> <span class="hidden lg:inline">Nueva Tarea</span>
                     </button>
                 </div>
             </div>
@@ -176,45 +210,45 @@
         // --- DATA ---
         const INITIAL_TASKS = [
             // Enero
-            { id: 1, area: 'AudioVisual', client: 'Scheckers', program: 'Video-cápsula Enero', detail: 'Entrega segunda semana enero', date: '2026-01-06', duration: 7, priority: 'Alta', completed: false },
-            { id: 2, area: 'Diseño', client: 'Scheckers', program: 'Infografía Enero', detail: 'Entrega segunda semana enero', date: '2026-01-06', duration: 4, priority: 'Alta', completed: false },
-            { id: 3, area: 'Diseño', client: 'Metlife', program: 'BOOK Imprimible', detail: 'Ajustes de jota (Bordes) para impresión Tekkrom', date: '2026-01-20', duration: 5, priority: 'Alta', completed: false },
-            { id: 4, area: 'Diseño', client: 'Metlife', program: 'Módulo VENTAS', detail: 'Nuevo Manual para Facilitadora Externa', date: '2026-01-26', duration: 7, priority: 'Alta', completed: false },
-            { id: 5, area: 'Diseño', client: 'Ripley', program: 'Pendón Onboarding', detail: 'Pendón guía centro formación Egaña', date: '2026-01-12', duration: 3, priority: 'Alta', completed: false },
-            { id: 6, area: 'Diseño', client: 'Ripley', program: 'Poster Tienda', detail: 'Infografía esquema talleres presenciales', date: '2026-01-15', duration: 2, priority: 'Media', completed: false },
-            { id: 7, area: 'Diseño', client: 'Ripley', program: 'Infografía Jecyp', detail: 'Guía Jecyp buenas prácticas', date: '2026-01-15', duration: 2, priority: 'Media', completed: false },
-            { id: 8, area: 'Diseño', client: 'Ripley', program: 'Fotos de Equipo', detail: 'Fotos profesionales para Presentaciones/Gifs', date: '2026-01-26', duration: 1, priority: 'Alta', completed: false },
-            { id: 9, area: 'AudioVisual', client: 'Ripley', program: 'Video Interactivo', detail: 'Guion uso Rposs (Conversar con JUAN)', date: '2026-01-31', duration: 5, priority: 'Media', completed: false },
-            { id: 10, area: 'Diseño', client: 'Walmart', program: 'Diseños Temáticos', detail: 'Campañas WhatsApp (Pascua, 18, Halloween...)', date: '2026-03-01', duration: 5, priority: 'Baja', completed: false },
-            { id: 11, area: 'Diseño', client: 'Equipo XP', program: 'Saludo Clientes', detail: 'Día madre, mujer, Navidad, etc.', date: '2026-02-01', duration: 3, priority: 'Baja', completed: false },
-            { id: 12, area: 'Diseño', client: 'Walmart', program: 'Testimonios Apertura', detail: 'Videos testimonios 2026', date: '2026-05-01', duration: 10, priority: 'Baja', completed: false },
-            { id: 13, area: 'Diseño', client: 'Walmart', program: 'Presentaciones', detail: 'Actualización diseño presentaciones apertura', date: '2026-01-31', duration: 5, priority: 'Baja', completed: false },
-            { id: 14, area: 'AudioVisual', client: 'Walmart', program: 'Testimonio OB', detail: 'Testimonio de experiencia', date: '2026-06-01', duration: 7, priority: 'Baja', completed: false },
-            { id: 15, area: 'AudioVisual', client: 'Walmart', program: 'Video Bienvenida', detail: 'Visualización del programa OB soporte', date: '2026-11-01', duration: 7, priority: 'Baja', completed: false },
-            { id: 16, area: 'AudioVisual', client: 'Parque R.', program: 'Video Impacto', detail: '1er semestre (movilizador) / 2do semestre (cierre)', date: '2026-07-01', duration: 10, priority: 'Baja', completed: false },
-            { id: 17, area: 'AudioVisual', client: 'Metlife', program: 'Video Impacto', detail: 'Video de cierre con testimonios', date: '2026-11-01', duration: 7, priority: 'Baja', completed: false },
-            { id: 18, area: 'Diseño', client: 'Ripley', program: 'GIFs Fechas', detail: 'Navidad, Año Nuevo, Fiestas Patrias', date: '2026-03-02', duration: 10, priority: 'Baja', completed: false },
-            { id: 19, area: 'AudioVisual', client: 'Ripley', program: 'Cierre Trimestre', detail: 'Video cierre indicadores (cada 3 meses)', date: '2026-04-03', duration: 5, priority: 'Baja', completed: false },
-            { id: 20, area: 'AudioVisual', client: 'Ripley', program: 'Impacto Semestral', detail: 'Motivacional / Cierre', date: '2026-05-29', duration: 5, priority: 'Baja', completed: false },
-            { id: 21, area: 'Diseño', client: 'Ripley', program: 'Galardón Fin Año', detail: 'Diseño de reconocimiento tiendas', date: '2026-11-08', duration: 5, priority: 'Baja', completed: false },
-            { id: 22, area: 'AudioVisual', client: 'Ripley', program: 'Video Cierre Año', detail: 'Recopilación entrega premios', date: '2026-12-04', duration: 7, priority: 'Baja', completed: false },
-            { id: 23, area: 'AudioVisual', client: 'Scheckers', program: 'Cápsula Febrero', detail: 'Entrega primera semana febrero', date: '2026-02-03', duration: 5, priority: 'Media', completed: false },
-            { id: 24, area: 'Diseño', client: 'Scheckers', program: 'Infografía Febrero', detail: 'Entrega primera semana febrero', date: '2026-02-03', duration: 3, priority: 'Media', completed: false },
-            { id: 25, area: 'Diseño', client: 'Walmart', program: 'Infografías OB', detail: 'Nuevo formato de entrenamiento', date: '2026-01-26', duration: 5, priority: 'Media', completed: false },
-            { id: 26, area: 'Diseño', client: 'Walmart', program: 'QR Tiendas', detail: 'Imágenes QR para declaración jurada', date: '2026-01-26', duration: 2, priority: 'Media', completed: false },
-            { id: 27, area: 'Diseño', client: 'Equipo XP', program: 'XP News', detail: 'Nuevo template newsletter', date: '2026-03-01', duration: 3, priority: 'Media', completed: false },
-            { id: 28, area: 'Diseño', client: 'Walmart', program: 'Estructura Procesos', detail: 'Revisión diseño flujograma', date: '2026-01-31', duration: 3, priority: 'Media', completed: false },
-            { id: 29, area: 'Diseño', client: 'Walmart', program: 'Videos Testimonios', detail: 'Diseño gráfica testimonios 2025', date: '2026-02-01', duration: 4, priority: 'Media', completed: false },
-            { id: 30, area: 'Diseño', client: 'Walmart', program: 'Videos APT', detail: 'Diseño testimonios e hitos', date: '2026-02-01', duration: 4, priority: 'Media', completed: false },
-            { id: 31, area: 'Diseño', client: 'Equipo XP', program: 'Taller DEI', detail: 'Diseño presentación Diversidad e Inclusión', date: '2026-03-02', duration: 5, priority: 'Media', completed: false },
-            { id: 32, area: 'Diseño', client: 'Equipo XP', program: 'Infografía DJ', detail: 'Instructivo DJ Elearning', date: '2026-02-15', duration: 3, priority: 'Media', completed: false },
-            { id: 33, area: 'AudioVisual', client: 'Equipo XP', program: 'Video DJ', detail: 'Video corto instructivo DJ', date: '2026-02-15', duration: 4, priority: 'Media', completed: false },
-            { id: 34, area: 'Diseño', client: 'Equipo XP', program: 'Template Cowork', detail: 'Renovar nueva cara del año', date: '2026-02-15', duration: 3, priority: 'Baja', completed: false },
-            { id: 35, area: 'AudioVisual', client: 'Equipo XP', program: 'Web / Redes', detail: 'Renovar videos equipo y web', date: '2026-06-01', duration: 10, priority: 'Baja', completed: false },
-            { id: 36, area: 'AudioVisual', client: 'Ripley', program: 'Impacto Anual', detail: 'Video cierre programa, material recopilatorio', date: '2026-11-01', duration: 7, priority: 'Baja', completed: false }
+            { id: 1, area: 'AudioVisual', client: 'Scheckers', program: 'Video-cápsula Enero', detail: 'Entrega segunda semana enero', date: '2026-01-06', duration: 7, priority: 'Alta', completed: false, createdAt: 1 },
+            { id: 2, area: 'Diseño', client: 'Scheckers', program: 'Infografía Enero', detail: 'Entrega segunda semana enero', date: '2026-01-06', duration: 4, priority: 'Alta', completed: false, createdAt: 2 },
+            { id: 3, area: 'Diseño', client: 'Metlife', program: 'BOOK Imprimible', detail: 'Ajustes de jota (Bordes) para impresión Tekkrom', date: '2026-01-20', duration: 5, priority: 'Alta', completed: false, createdAt: 3 },
+            { id: 4, area: 'Diseño', client: 'Metlife', program: 'Módulo VENTAS', detail: 'Nuevo Manual para Facilitadora Externa', date: '2026-01-26', duration: 7, priority: 'Alta', completed: false, createdAt: 4 },
+            { id: 5, area: 'Diseño', client: 'Ripley', program: 'Pendón Onboarding', detail: 'Pendón guía centro formación Egaña', date: '2026-01-12', duration: 3, priority: 'Alta', completed: false, createdAt: 5 },
+            { id: 6, area: 'Diseño', client: 'Ripley', program: 'Poster Tienda', detail: 'Infografía esquema talleres presenciales', date: '2026-01-15', duration: 2, priority: 'Media', completed: false, createdAt: 6 },
+            { id: 7, area: 'Diseño', client: 'Ripley', program: 'Infografía Jecyp', detail: 'Guía Jecyp buenas prácticas', date: '2026-01-15', duration: 2, priority: 'Media', completed: false, createdAt: 7 },
+            { id: 8, area: 'Diseño', client: 'Ripley', program: 'Fotos de Equipo', detail: 'Fotos profesionales para Presentaciones/Gifs', date: '2026-01-26', duration: 1, priority: 'Alta', completed: false, createdAt: 8 },
+            { id: 9, area: 'AudioVisual', client: 'Ripley', program: 'Video Interactivo', detail: 'Guion uso Rposs (Conversar con JUAN)', date: '2026-01-31', duration: 5, priority: 'Media', completed: false, createdAt: 9 },
+            { id: 10, area: 'Diseño', client: 'Walmart', program: 'Diseños Temáticos', detail: 'Campañas WhatsApp (Pascua, 18, Halloween...)', date: '2026-03-01', duration: 5, priority: 'Baja', completed: false, createdAt: 10 },
+            { id: 11, area: 'Diseño', client: 'Equipo XP', program: 'Saludo Clientes', detail: 'Día madre, mujer, Navidad, etc.', date: '2026-02-01', duration: 3, priority: 'Baja', completed: false, createdAt: 11 },
+            { id: 12, area: 'Diseño', client: 'Walmart', program: 'Testimonios Apertura', detail: 'Videos testimonios 2026', date: '2026-05-01', duration: 10, priority: 'Baja', completed: false, createdAt: 12 },
+            { id: 13, area: 'Diseño', client: 'Walmart', program: 'Presentaciones', detail: 'Actualización diseño presentaciones apertura', date: '2026-01-31', duration: 5, priority: 'Baja', completed: false, createdAt: 13 },
+            { id: 14, area: 'AudioVisual', client: 'Walmart', program: 'Testimonio OB', detail: 'Testimonio de experiencia', date: '2026-06-01', duration: 7, priority: 'Baja', completed: false, createdAt: 14 },
+            { id: 15, area: 'AudioVisual', client: 'Walmart', program: 'Video Bienvenida', detail: 'Visualización del programa OB soporte', date: '2026-11-01', duration: 7, priority: 'Baja', completed: false, createdAt: 15 },
+            { id: 16, area: 'AudioVisual', client: 'Parque R.', program: 'Video Impacto', detail: '1er semestre (movilizador) / 2do semestre (cierre)', date: '2026-07-01', duration: 10, priority: 'Baja', completed: false, createdAt: 16 },
+            { id: 17, area: 'AudioVisual', client: 'Metlife', program: 'Video Impacto', detail: 'Video de cierre con testimonios', date: '2026-11-01', duration: 7, priority: 'Baja', completed: false, createdAt: 17 },
+            { id: 18, area: 'Diseño', client: 'Ripley', program: 'GIFs Fechas', detail: 'Navidad, Año Nuevo, Fiestas Patrias', date: '2026-03-02', duration: 10, priority: 'Baja', completed: false, createdAt: 18 },
+            { id: 19, area: 'AudioVisual', client: 'Ripley', program: 'Cierre Trimestre', detail: 'Video cierre indicadores (cada 3 meses)', date: '2026-04-03', duration: 5, priority: 'Baja', completed: false, createdAt: 19 },
+            { id: 20, area: 'AudioVisual', client: 'Ripley', program: 'Impacto Semestral', detail: 'Motivacional / Cierre', date: '2026-05-29', duration: 5, priority: 'Baja', completed: false, createdAt: 20 },
+            { id: 21, area: 'Diseño', client: 'Ripley', program: 'Galardón Fin Año', detail: 'Diseño de reconocimiento tiendas', date: '2026-11-08', duration: 5, priority: 'Baja', completed: false, createdAt: 21 },
+            { id: 22, area: 'AudioVisual', client: 'Ripley', program: 'Video Cierre Año', detail: 'Recopilación entrega premios', date: '2026-12-04', duration: 7, priority: 'Baja', completed: false, createdAt: 22 },
+            { id: 23, area: 'AudioVisual', client: 'Scheckers', program: 'Cápsula Febrero', detail: 'Entrega primera semana febrero', date: '2026-02-03', duration: 5, priority: 'Media', completed: false, createdAt: 23 },
+            { id: 24, area: 'Diseño', client: 'Scheckers', program: 'Infografía Febrero', detail: 'Entrega primera semana febrero', date: '2026-02-03', duration: 3, priority: 'Media', completed: false, createdAt: 24 },
+            { id: 25, area: 'Diseño', client: 'Walmart', program: 'Infografías OB', detail: 'Nuevo formato de entrenamiento', date: '2026-01-26', duration: 5, priority: 'Media', completed: false, createdAt: 25 },
+            { id: 26, area: 'Diseño', client: 'Walmart', program: 'QR Tiendas', detail: 'Imágenes QR para declaración jurada', date: '2026-01-26', duration: 2, priority: 'Media', completed: false, createdAt: 26 },
+            { id: 27, area: 'Diseño', client: 'Equipo XP', program: 'XP News', detail: 'Nuevo template newsletter', date: '2026-03-01', duration: 3, priority: 'Media', completed: false, createdAt: 27 },
+            { id: 28, area: 'Diseño', client: 'Walmart', program: 'Estructura Procesos', detail: 'Revisión diseño flujograma', date: '2026-01-31', duration: 3, priority: 'Media', completed: false, createdAt: 28 },
+            { id: 29, area: 'Diseño', client: 'Walmart', program: 'Videos Testimonios', detail: 'Diseño gráfica testimonios 2025', date: '2026-02-01', duration: 4, priority: 'Media', completed: false, createdAt: 29 },
+            { id: 30, area: 'Diseño', client: 'Walmart', program: 'Videos APT', detail: 'Diseño testimonios e hitos', date: '2026-02-01', duration: 4, priority: 'Media', completed: false, createdAt: 30 },
+            { id: 31, area: 'Diseño', client: 'Equipo XP', program: 'Taller DEI', detail: 'Diseño presentación Diversidad e Inclusión', date: '2026-03-02', duration: 5, priority: 'Media', completed: false, createdAt: 31 },
+            { id: 32, area: 'Diseño', client: 'Equipo XP', program: 'Infografía DJ', detail: 'Instructivo DJ Elearning', date: '2026-02-15', duration: 3, priority: 'Media', completed: false, createdAt: 32 },
+            { id: 33, area: 'AudioVisual', client: 'Equipo XP', program: 'Video DJ', detail: 'Video corto instructivo DJ', date: '2026-02-15', duration: 4, priority: 'Media', completed: false, createdAt: 33 },
+            { id: 34, area: 'Diseño', client: 'Equipo XP', program: 'Template Cowork', detail: 'Renovar nueva cara del año', date: '2026-02-15', duration: 3, priority: 'Baja', completed: false, createdAt: 34 },
+            { id: 35, area: 'AudioVisual', client: 'Equipo XP', program: 'Web / Redes', detail: 'Renovar videos equipo y web', date: '2026-06-01', duration: 10, priority: 'Baja', completed: false, createdAt: 35 },
+            { id: 36, area: 'AudioVisual', client: 'Ripley', program: 'Impacto Anual', detail: 'Video cierre programa, material recopilatorio', date: '2026-11-01', duration: 7, priority: 'Baja', completed: false, createdAt: 36 }
         ];
 
-        let tasks = JSON.parse(localStorage.getItem('creativeTasks_2026_v4')) || INITIAL_TASKS;
+        let tasks = JSON.parse(localStorage.getItem('creativeTasks_2026_v5')) || INITIAL_TASKS;
         if(tasks.length < 5) tasks = INITIAL_TASKS;
 
         let state = {
@@ -222,11 +256,13 @@
             filterArea: 'Todas',
             filterPriority: 'Todas',
             searchTerm: '',
+            sortBy: 'date', // date, recent
+            zoomLevel: 3, // 1 to 5
             calendarDate: new Date(2026, 0, 1),
             activeMenuTaskId: null
         };
 
-        const saveTasks = () => localStorage.setItem('creativeTasks_2026_v4', JSON.stringify(tasks));
+        const saveTasks = () => localStorage.setItem('creativeTasks_2026_v5', JSON.stringify(tasks));
 
         // --- HELPERS ---
         const addDays = (dateStr, days) => {
@@ -272,7 +308,7 @@
         };
 
         const getFilteredTasks = () => {
-            return tasks.filter(t => {
+            const filtered = tasks.filter(t => {
                 const matchArea = state.filterArea === 'Todas' || t.area === state.filterArea;
                 const matchPriority = state.filterPriority === 'Todas' || t.priority === state.filterPriority;
                 const search = state.searchTerm.toLowerCase();
@@ -284,7 +320,13 @@
                                     safeProgram.includes(search) || 
                                     safeDetail.includes(search);
                 return matchArea && matchPriority && matchSearch;
-            }).sort((a,b) => new Date(a.date) - new Date(b.date));
+            });
+
+            if (state.sortBy === 'recent') {
+                return filtered.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+            } else {
+                return filtered.sort((a,b) => new Date(a.date) - new Date(b.date));
+            }
         };
 
         // --- RENDERERS ---
@@ -295,6 +337,16 @@
 
             const filtered = getFilteredTasks();
             
+            // Toggle Zoom Control Visibility
+            const zoomControl = document.getElementById('zoom-control');
+            if (state.view === 'grid') {
+                zoomControl.classList.remove('hidden');
+                zoomControl.classList.add('flex');
+            } else {
+                zoomControl.classList.add('hidden');
+                zoomControl.classList.remove('flex');
+            }
+
             if(filtered.length === 0) {
                 container.innerHTML = `
                     <div class="flex flex-col items-center justify-center h-full text-slate-400 opacity-60">
@@ -317,6 +369,9 @@
             const activeBtn = document.getElementById(`btn-${state.view}`);
             activeBtn.classList.remove('text-slate-500', 'hover:bg-slate-200');
             activeBtn.classList.add('bg-white', 'shadow-sm', 'text-indigo-600');
+            
+            // Update Sort Selector UI
+            document.getElementById('sort-by').value = state.sortBy;
         }
 
         function renderHeader() {
@@ -349,13 +404,27 @@
         function renderGrid(container, tasks) {
             container.className = "max-w-7xl mx-auto h-full flex flex-col";
             const gridDiv = document.createElement('div');
-            // Changed: Added flex-1 and h-full to gridDiv to ensure it takes space and scrolls
-            // Changed: content-start to align content at the top
-            gridDiv.className = "grid gap-6 overflow-y-auto pb-20 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 pr-2 custom-scrollbar content-start flex-1 w-full";
+            
+            // Grid Cols Logic based on Zoom Level
+            let gridCols = "grid-cols-1 md:grid-cols-3"; // Default
+            const z = parseInt(state.zoomLevel);
+            if(z === 1) gridCols = "grid-cols-1";
+            if(z === 2) gridCols = "grid-cols-1 sm:grid-cols-2";
+            if(z === 3) gridCols = "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
+            if(z === 4) gridCols = "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4";
+            if(z === 5) gridCols = "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5";
+
+            gridDiv.className = `grid gap-6 overflow-y-auto pb-20 ${gridCols} pr-2 custom-scrollbar content-start flex-1 w-full`;
             
             tasks.forEach(task => {
                 const card = document.createElement('div');
-                card.className = "group bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-lg hover:border-indigo-100 hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden relative min-h-[220px]";
+                card.className = "group bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-lg hover:border-indigo-100 hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden relative min-h-[200px]";
+                
+                // Highlight new tasks in "Recent" sort
+                if (state.sortBy === 'recent' && (Date.now() - task.createdAt) < 60000) {
+                    card.classList.add('ring-2', 'ring-indigo-500', 'ring-offset-2');
+                }
+
                 card.innerHTML = `
                     <div class="h-1.5 w-full ${getClientColor(task.client)}"></div>
                     <div class="p-5 flex-1 flex flex-col">
@@ -699,6 +768,8 @@
         function handleSearch(val) { state.searchTerm = val; renderApp(); }
         function handleFilterArea(val) { state.filterArea = val; renderApp(); }
         function handleFilterPriority(val) { state.filterPriority = val; renderApp(); }
+        function handleSort(val) { state.sortBy = val; renderApp(); }
+        function handleZoom(val) { state.zoomLevel = parseInt(val); renderApp(); }
 
         function addNewTask() {
             const newTask = {
@@ -710,10 +781,14 @@
                 date: new Date().toISOString().split('T')[0],
                 duration: 3,
                 priority: 'Media',
-                completed: false
+                completed: false,
+                createdAt: Date.now()
             };
             tasks.push(newTask);
             saveTasks();
+            
+            // Auto switch to 'recent' sort to show the new task
+            state.sortBy = 'recent';
             renderApp();
             showToast('Tarea creada exitosamente');
         }
@@ -761,9 +836,10 @@
         window.duplicateTaskFromMenu = function() {
             const task = tasks.find(t => t.id === state.activeMenuTaskId);
             if(task) {
-                const newTask = {...task, id: Date.now(), program: task.program + ' (Copia)'};
+                const newTask = {...task, id: Date.now(), program: task.program + ' (Copia)', createdAt: Date.now()};
                 tasks.push(newTask);
                 saveTasks();
+                state.sortBy = 'recent'; // Switch to recent to show copy
                 renderApp();
                 showToast('Tarea duplicada');
             }
