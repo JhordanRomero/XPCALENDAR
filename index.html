@@ -23,11 +23,23 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; border: 2px solid #f1f5f9; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         
-        /* Hide scrollbar for clean inputs */
+        /* Ocultar el icono predeterminado del calendario solo si molesta visualmente, 
+           pero SIN overlay transparente que bloquee el cursor */
+        input[type="date"]::-webkit-inner-spin-button,
         input[type="date"]::-webkit-calendar-picker-indicator {
-            background: transparent;
-            bottom: 0; color: transparent; cursor: pointer;
-            height: auto; left: 0; position: absolute; right: 0; top: 0; width: auto;
+            opacity: 0.5;
+            cursor: pointer;
+        }
+
+        /* Ghost Input Animation */
+        .input-ghost {
+            transition: all 0.2s;
+            border-bottom: 1px solid transparent;
+        }
+        .input-ghost:hover, .input-ghost:focus {
+            background-color: #f1f5f9;
+            border-bottom: 1px solid #cbd5e1;
+            padding-left: 4px;
         }
 
         /* Slider Styling */
@@ -106,7 +118,6 @@
 
                     <!-- Filters -->
                     <div class="flex gap-2 w-full sm:w-auto flex-wrap">
-                        <!-- Filtro de Clientes -->
                         <select id="filter-client" onchange="handleFilterClient(this.value)" class="block px-3 py-1.5 text-sm bg-white border border-slate-200 rounded-lg focus:ring-indigo-500 outline-none cursor-pointer hover:bg-slate-50">
                             <!-- Populated by JS -->
                         </select>
@@ -236,7 +247,7 @@
 
     <!-- CREATE/EDIT TASK MODAL -->
     <div id="task-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 opacity-0 transition-opacity duration-200">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform scale-95 transition-transform duration-200" id="task-modal-content">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden transform scale-95 transition-transform duration-200" id="task-modal-content">
             <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                 <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2" id="modal-title">
                     <i data-lucide="plus-circle" class="w-5 h-5 text-indigo-600"></i> Nueva Tarea
@@ -247,25 +258,27 @@
             </div>
             
             <div class="p-6 space-y-5">
-                <!-- Hidden Input for Editing ID -->
                 <input type="hidden" id="modal-task-id">
 
-                <!-- Row 1: Client & Area -->
-                <div class="grid grid-cols-2 gap-4">
+                <!-- Row 1 -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Cliente</label>
                         <div class="flex gap-2">
                             <div class="relative flex-1" id="client-select-container">
-                                <select id="modal-client" class="w-full border border-slate-200 rounded-lg pl-3 pr-8 py-2.5 text-sm font-medium text-slate-700 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all appearance-none cursor-pointer">
-                                    <!-- Populated by JS -->
-                                </select>
+                                <select id="modal-client" class="w-full border border-slate-200 rounded-lg pl-3 pr-8 py-2.5 text-sm font-medium text-slate-700 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all appearance-none cursor-pointer"></select>
                                 <i data-lucide="chevron-down" class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"></i>
                             </div>
-                            <input type="text" id="modal-new-client" class="hidden w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 bg-white focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Nombre cliente...">
-                            <button onclick="toggleNewClient()" class="p-2 bg-slate-100 hover:bg-indigo-100 text-slate-500 hover:text-indigo-600 rounded-lg transition-colors border border-slate-200" title="Atajo Nuevo Cliente">
+                            <input type="text" id="modal-new-client" class="hidden w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 bg-white focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Nombre...">
+                            <button onclick="toggleNewClient()" class="p-2 bg-slate-100 hover:bg-indigo-100 text-slate-500 hover:text-indigo-600 rounded-lg transition-colors border border-slate-200" title="Nuevo Cliente">
                                 <i data-lucide="plus" class="w-4 h-4"></i>
                             </button>
                         </div>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Programa (Sub)</label>
+                        <input type="text" id="modal-program-type" list="program-types-list" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="Ej: Onboarding...">
+                        <datalist id="program-types-list"></datalist>
                     </div>
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Área</label>
@@ -276,17 +289,6 @@
                             </select>
                             <i data-lucide="chevron-down" class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"></i>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Row 1.5: Program Type (Subdivision) -->
-                <div class="space-y-1.5">
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Programa (Sub)</label>
-                    <div class="relative">
-                        <input type="text" id="modal-program-type" list="program-types-list" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="Ej: Onboarding, Apertura... (Opcional)">
-                        <datalist id="program-types-list">
-                            <!-- Populated by JS -->
-                        </datalist>
                     </div>
                 </div>
                 
@@ -302,32 +304,35 @@
                     <textarea id="modal-detail" rows="2" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-600 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none resize-none transition-all" placeholder="Descripción breve..."></textarea>
                 </div>
 
-                <!-- Row 4 -->
-                <div class="grid grid-cols-3 gap-4">
+                <!-- Row 4: FECHAS (Modificado para robustez) -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50/50 p-4 rounded-lg border border-slate-100">
                     <div class="space-y-1.5">
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Inicio</label>
-                        <input type="date" id="modal-date" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wide">Inicio</label>
+                        <input type="date" id="modal-date" onchange="modalDateLogic('start')" class="w-full border border-slate-200 rounded-md px-2 py-1.5 text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none cursor-text">
                     </div>
                     <div class="space-y-1.5">
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Días</label>
-                        <input type="number" id="modal-duration" value="1" min="1" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wide">Fin</label>
+                        <input type="date" id="modal-end-date" onchange="modalDateLogic('end')" class="w-full border border-slate-200 rounded-md px-2 py-1.5 text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none cursor-text">
+                    </div>
+                    <div class="space-y-1.5 relative">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wide">Días</label>
+                        <input type="number" id="modal-duration" value="1" min="1" onchange="modalDateLogic('duration')" class="w-full border border-slate-200 rounded-md px-2 py-1.5 text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none text-center font-mono">
                     </div>
                     <div class="space-y-1.5">
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Prioridad</label>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wide">Prioridad</label>
                         <div class="relative">
-                            <select id="modal-priority" class="w-full border border-slate-200 rounded-lg pl-3 pr-8 py-2 text-sm font-medium text-slate-700 bg-white focus:ring-2 focus:ring-indigo-500 outline-none appearance-none cursor-pointer">
+                            <select id="modal-priority" class="w-full border border-slate-200 rounded-md pl-2 pr-6 py-1.5 text-sm font-medium text-slate-700 bg-white focus:ring-2 focus:ring-indigo-500 outline-none appearance-none cursor-pointer">
                                 <option value="Alta">🔴 Alta</option>
                                 <option value="Media" selected>🟡 Media</option>
                                 <option value="Baja">🟢 Baja</option>
                             </select>
-                            <i data-lucide="chevron-down" class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"></i>
+                            <i data-lucide="chevron-down" class="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none"></i>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-between gap-3">
-                <!-- Delete Button (Only visible in edit mode) -->
                 <button id="btn-delete-task-modal" onclick="deleteTaskFromModal()" class="hidden px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100 flex items-center gap-2">
                     <i data-lucide="trash-2" class="w-4 h-4"></i> Eliminar Tarea
                 </button>
@@ -430,7 +435,7 @@
             { id: 36, area: 'AudioVisual', client: 'Ripley', programType: '', program: 'Impacto Anual', detail: 'Video cierre programa, material recopilatorio', date: '2026-11-01', duration: 7, priority: 'Baja', completed: false, pinned: false, createdAt: 36 }
         ];
 
-        let tasks = JSON.parse(localStorage.getItem('creativeTasks_2026_v13')) || INITIAL_TASKS;
+        let tasks = JSON.parse(localStorage.getItem('creativeTasks_2026_v17')) || INITIAL_TASKS;
         if(tasks.length < 5) tasks = INITIAL_TASKS;
 
         // Init Settings (Clients / Programs)
@@ -451,23 +456,24 @@
             programTypes: savedPrograms || ["Onboarding", "Apertura", "Transversal", "Cierre", "Otro"]
         };
 
-        const saveTasks = () => localStorage.setItem('creativeTasks_2026_v13', JSON.stringify(tasks));
+        const saveTasks = () => localStorage.setItem('creativeTasks_2026_v17', JSON.stringify(tasks));
         const saveSettings = () => {
             localStorage.setItem('creativeClients_2026', JSON.stringify(state.clients));
             localStorage.setItem('creativePrograms_2026', JSON.stringify(state.programTypes));
         };
 
-        // --- HELPERS ---
-        
-        // 1 día = Start Date. 2 días = Start Date + 1
+        // --- HELPERS PARA FECHAS ---
+        const formatDateString = (date) => date.toISOString().split('T')[0];
+
+        // 1 día = Fin es el mismo día que Inicio
         const getEndDate = (startStr, duration) => {
             if (!startStr) return '';
             const date = new Date(startStr + 'T12:00:00');
-            date.setDate(date.getDate() + parseInt(duration) - 1);
-            return date.toISOString().split('T')[0];
+            date.setDate(date.getDate() + Math.max(0, parseInt(duration) - 1));
+            return formatDateString(date);
         };
 
-        // Same day = 1 day duration. +1 day = 2 day duration
+        // Misma fecha = 1 día
         const getDaysDiff = (startStr, endStr) => {
             const d1 = new Date(startStr + 'T12:00:00');
             const d2 = new Date(endStr + 'T12:00:00');
@@ -670,7 +676,7 @@
                                 <h3 class="text-[10px] font-bold uppercase text-slate-400">${escapeHtml(task.client)}</h3>
                                 ${task.programType ? `<span class="text-[9px] bg-slate-100 px-1.5 rounded text-slate-500 border">${escapeHtml(task.programType)}</span>` : ''}
                             </div>
-                            <input type="text" value="${escapeHtml(task.program)}" onblur="updateTask(${task.id}, 'program', this.value)" onkeydown="if(event.key==='Enter') this.blur()"
+                            <input type="text" value="${escapeHtml(task.program)}" onblur="updateInlineField(${task.id}, 'program', this.value)" onkeydown="if(event.key==='Enter') this.blur()"
                                 class="w-full text-sm font-bold text-slate-800 bg-transparent input-ghost rounded px-1 -ml-1 ${task.completed ? 'line-through text-slate-400' : ''}">
                         </div>
                         <div class="hidden md:flex flex-1 items-center gap-2">
@@ -825,23 +831,22 @@
                 const row = document.createElement('div');
                 row.className = `grid grid-cols-[40px_40px_140px_1fr_110px_70px_110px_40px] border-b border-slate-100 hover:bg-slate-50 transition-colors items-center h-[44px] cursor-pointer ${task.pinned ? 'bg-amber-50/10' : ''}`;
                 row.onclick = (e) => { if(!e.target.closest('button') && !e.target.closest('input')) openTaskModal(task.id); };
+                
                 row.innerHTML = `
                     <div class="border-r h-full flex items-center justify-center"><button onclick="toggleComplete(${task.id})" class="text-slate-300 hover:text-emerald-500"><i data-lucide="check-circle-2" class="w-4 h-4"></i></button></div>
                     <div class="border-r h-full flex items-center justify-center"><button onclick="togglePin(event, ${task.id})" class="transition-transform hover:scale-110 ${task.pinned ? 'text-amber-500' : 'text-slate-300 hover:text-amber-500'}"><i data-lucide="pin" class="w-4 h-4" ${task.pinned ? 'fill="currentColor"' : ''}></i></button></div>
                     <div class="border-r h-full px-2 py-1 flex items-center"><div class="w-full h-7 px-2 rounded-md flex items-center justify-center text-[10px] font-bold truncate ${getClientBadge(task.client)}">${escapeHtml(task.client)}</div></div>
                     <div class="border-r h-full px-3 py-1 flex items-center">
-                        <input type="text" value="${escapeHtml(task.program)}" onblur="updateTask(${task.id}, 'program', this.value)" onkeydown="if(event.key==='Enter') this.blur()" class="w-full text-xs font-semibold text-slate-700 bg-transparent input-ghost rounded py-1 px-2 cursor-text">
+                        <input type="text" value="${escapeHtml(task.program)}" onblur="updateInlineField(${task.id}, 'program', this.value)" onkeydown="if(event.key==='Enter') this.blur()" class="w-full text-xs font-semibold text-slate-700 bg-transparent input-ghost rounded py-1 px-2 cursor-text">
                     </div>
-                    <div class="border-r h-full px-1 py-1 flex items-center justify-center relative hover:bg-slate-100 transition-colors cursor-pointer group-input">
-                        <input type="date" value="${task.date}" onchange="updateTask(${task.id}, 'date', this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" title="Editar Inicio">
-                        <span class="text-xs font-mono text-slate-600 pointer-events-none group-input-hover:text-indigo-600">${task.date}</span>
+                    <div class="border-r h-full px-1 py-1 flex items-center justify-center relative hover:bg-slate-100 transition-colors">
+                        <input type="date" value="${task.date}" onchange="updateInlineDate(${task.id}, 'start', this.value)" class="w-full h-full bg-transparent border-none outline-none text-center text-xs font-mono text-slate-600 input-ghost rounded cursor-text" title="Editar Inicio">
                     </div>
-                    <div class="border-r h-full px-1 py-1 flex items-center justify-center">
-                        <input type="number" min="1" value="${task.duration}" onblur="updateTask(${task.id}, 'duration', this.value)" onkeydown="if(event.key==='Enter') this.blur()" class="w-full h-full bg-transparent border-none outline-none text-center text-xs font-mono text-slate-600 input-ghost rounded cursor-text">
+                    <div class="border-r h-full px-1 py-1 flex items-center justify-center relative hover:bg-slate-100 transition-colors">
+                        <input type="number" min="1" value="${task.duration}" onchange="updateInlineDate(${task.id}, 'duration', this.value)" class="w-full h-full bg-transparent border-none outline-none text-center text-xs font-mono text-slate-600 input-ghost rounded cursor-text" title="Editar Días">
                     </div>
-                    <div class="h-full px-1 py-1 flex items-center justify-center relative hover:bg-slate-100 cursor-pointer">
-                        <input type="date" value="${endDate}" onchange="updateEnd(${task.id}, '${task.date}', this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" title="Editar Fin">
-                        <span class="text-xs font-mono text-slate-500 pointer-events-none">${endDate}</span>
+                    <div class="h-full px-1 py-1 flex items-center justify-center relative hover:bg-slate-100 transition-colors">
+                        <input type="date" value="${endDate}" onchange="updateInlineDate(${task.id}, 'end', this.value)" class="w-full h-full bg-transparent border-none outline-none text-center text-xs font-mono text-slate-500 input-ghost rounded cursor-text" title="Editar Fin">
                     </div>
                     <div class="h-full flex items-center justify-center"><button onclick="openContextMenu(event, ${task.id})" class="p-1.5 text-slate-400 hover:text-indigo-600"><i data-lucide="more-horizontal" class="w-4 h-4"></i></button></div>`;
                 editorBody.appendChild(row);
@@ -966,6 +971,7 @@
                 saveSettings();
                 input.value = '';
                 openSettingsModal(); 
+                renderFilters();
                 showToast('Cliente añadido');
             }
         }
@@ -999,6 +1005,95 @@
             }
         }
 
+        // --- MODAL DATE LOGIC ---
+        window.modalDateLogic = function(trigger) {
+            const startInput = document.getElementById('modal-date');
+            const endInput = document.getElementById('modal-end-date');
+            const durInput = document.getElementById('modal-duration');
+
+            if (!startInput.value) return;
+
+            if (trigger === 'duration') {
+                if (durInput.value === '') return; // Dejar escribir
+                let dur = parseInt(durInput.value);
+                if (isNaN(dur)) return;
+                if (dur < 1) dur = 1;
+                endInput.value = getEndDate(startInput.value, dur);
+            } 
+            else if (trigger === 'start') {
+                let dur = parseInt(durInput.value) || 1;
+                endInput.value = getEndDate(startInput.value, dur);
+            }
+            else if (trigger === 'end') {
+                if (!endInput.value) return;
+                let start = new Date(startInput.value + 'T12:00:00');
+                let end = new Date(endInput.value + 'T12:00:00');
+                
+                if (end < start) {
+                    endInput.value = startInput.value;
+                    durInput.value = 1;
+                } else {
+                    const diff = getDaysDiff(startInput.value, endInput.value);
+                    durInput.value = diff;
+                }
+            }
+        };
+
+        // --- INLINE EDIT LOGIC (GANTT/LIST) ---
+        window.updateInlineField = function(id, field, value) {
+            const task = tasks.find(t => t.id === id);
+            if(task && task[field] !== value) {
+                task[field] = value;
+                saveTasks();
+                renderApp();
+                showToast('Cambios guardados', 'success');
+            }
+        };
+
+        window.updateInlineDate = function(id, type, value) {
+            const task = tasks.find(t => t.id === id);
+            if(!task) return;
+            
+            let changed = false;
+
+            if (type === 'start') {
+                if (!value) return;
+                if (task.date !== value) {
+                    task.date = value;
+                    changed = true;
+                }
+            } else if (type === 'duration') {
+                let dur = parseInt(value);
+                if (isNaN(dur) || dur < 1) dur = 1;
+                if (task.duration !== dur) {
+                    task.duration = dur;
+                    changed = true;
+                }
+            } else if (type === 'end') {
+                if (!value) return;
+                let start = new Date(task.date + 'T12:00:00');
+                let end = new Date(value + 'T12:00:00');
+                let dur = task.duration;
+                if (end < start) {
+                    // Force duration to 1 if trying to set end date before start
+                    dur = 1;
+                } else {
+                    dur = getDaysDiff(task.date, value);
+                }
+                if (task.duration !== dur) {
+                    task.duration = dur;
+                    changed = true;
+                }
+            }
+            
+            if (changed) {
+                saveTasks();
+                renderApp();
+                showToast('Fechas actualizadas', 'success');
+            }
+        };
+
+
         // --- TASK MODAL LOGIC ---
         function openTaskModal(taskId = null) {
             const modal = document.getElementById('task-modal');
@@ -1022,8 +1117,11 @@
                     document.getElementById('modal-program-type').value = task.programType || '';
                     document.getElementById('modal-program').value = task.program;
                     document.getElementById('modal-detail').value = task.detail || '';
+                    
                     document.getElementById('modal-date').value = task.date;
                     document.getElementById('modal-duration').value = task.duration;
+                    document.getElementById('modal-end-date').value = getEndDate(task.date, task.duration);
+                    
                     document.getElementById('modal-priority').value = task.priority;
                 }
             } else {
@@ -1036,8 +1134,12 @@
                 document.getElementById('modal-program').value = '';
                 document.getElementById('modal-detail').value = '';
                 document.getElementById('modal-program-type').value = '';
+                
+                const today = new Date();
+                document.getElementById('modal-date').valueAsDate = today;
                 document.getElementById('modal-duration').value = '1';
-                document.getElementById('modal-date').valueAsDate = new Date();
+                document.getElementById('modal-end-date').value = formatDateString(today); // duration = 1 -> end = start
+                
                 if(state.clients.length > 0) document.getElementById('modal-client').selectedIndex = 0;
             }
 
@@ -1102,14 +1204,18 @@
                 saveSettings();
             }
 
+            const startD = document.getElementById('modal-date').value || new Date().toISOString().split('T')[0];
+            let durD = parseInt(document.getElementById('modal-duration').value);
+            if (isNaN(durD) || durD < 1) durD = 1;
+
             const taskData = {
                 client: client,
                 area: document.getElementById('modal-area').value,
                 programType: pType,
                 program: document.getElementById('modal-program').value.trim(),
                 detail: document.getElementById('modal-detail').value,
-                date: document.getElementById('modal-date').value || new Date().toISOString().split('T')[0],
-                duration: parseInt(document.getElementById('modal-duration').value) || 1,
+                date: startD,
+                duration: durD,
                 priority: document.getElementById('modal-priority').value,
             };
 
@@ -1143,22 +1249,6 @@
         
         window.changeMonth = function(dir) { state.calendarDate.setMonth(state.calendarDate.getMonth() + dir); renderApp(); };
         
-        window.updateTask = function(id, field, value) {
-            const task = tasks.find(t => t.id === id);
-            if(task) {
-                if(field === 'duration') value = parseInt(value) || 1;
-                task[field] = value;
-                saveTasks();
-                renderApp();
-                showToast('Cambios guardados', 'success');
-            }
-        };
-
-        window.updateEnd = function(id, startDate, endDate) {
-            const diff = getDaysDiff(startDate, endDate);
-            window.updateTask(id, 'duration', diff);
-        };
-
         window.toggleComplete = function(id) { 
             const t = tasks.find(x => x.id === id); 
             if(t) {
