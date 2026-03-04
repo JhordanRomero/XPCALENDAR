@@ -352,6 +352,9 @@
         <button onclick="openTaskModal(state.activeMenuTaskId); document.getElementById('context-menu').classList.add('hidden');" class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors">
             <i data-lucide="edit-2" class="w-4 h-4 text-slate-400"></i> Editar tarea
         </button>
+        <button onclick="togglePinFromMenu()" id="btn-pin-menu" class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors">
+            <i data-lucide="pin" class="w-4 h-4 text-slate-400"></i> Fijar/Desfijar
+        </button>
         <button onclick="duplicateTaskFromMenu()" class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors">
             <i data-lucide="copy" class="w-4 h-4 text-slate-400"></i> Duplicar tarea
         </button>
@@ -382,45 +385,45 @@
 
         // --- DATA ---
         const INITIAL_TASKS = [
-            { id: 1, area: 'AudioVisual', client: 'Scheckers', programType: '', program: 'Video-cápsula Enero', detail: 'Entrega segunda semana enero', date: '2026-01-06', duration: 7, priority: 'Alta', completed: false, createdAt: 1 },
-            { id: 2, area: 'Diseño', client: 'Scheckers', programType: '', program: 'Infografía Enero', detail: 'Entrega segunda semana enero', date: '2026-01-06', duration: 4, priority: 'Alta', completed: false, createdAt: 2 },
-            { id: 3, area: 'Diseño', client: 'Metlife', programType: '', program: 'BOOK Imprimible', detail: 'Ajustes de jota (Bordes)', date: '2026-01-20', duration: 5, priority: 'Alta', completed: false, createdAt: 3 },
-            { id: 4, area: 'Diseño', client: 'Metlife', programType: '', program: 'Módulo VENTAS', detail: 'Nuevo Manual', date: '2026-01-26', duration: 7, priority: 'Alta', completed: false, createdAt: 4 },
-            { id: 5, area: 'Diseño', client: 'Ripley', programType: '', program: 'Pendón Onboarding', detail: 'Guía centro formación', date: '2026-01-12', duration: 3, priority: 'Alta', completed: false, createdAt: 5 },
-            { id: 6, area: 'Diseño', client: 'Ripley', programType: '', program: 'Poster Tienda', detail: 'Esquema talleres', date: '2026-01-15', duration: 2, priority: 'Media', completed: false, createdAt: 6 },
-            { id: 7, area: 'Diseño', client: 'Ripley', programType: '', program: 'Infografía Jecyp', detail: 'Guía buenas prácticas', date: '2026-01-15', duration: 2, priority: 'Media', completed: false, createdAt: 7 },
-            { id: 8, area: 'Diseño', client: 'Ripley', programType: '', program: 'Fotos de Equipo', detail: 'Fotos profesionales', date: '2026-01-26', duration: 1, priority: 'Alta', completed: false, createdAt: 8 },
-            { id: 9, area: 'AudioVisual', client: 'Ripley', programType: '', program: 'Video Interactivo', detail: 'Guion uso Rposs', date: '2026-01-31', duration: 5, priority: 'Media', completed: false, createdAt: 9 },
-            { id: 10, area: 'Diseño', client: 'Walmart', programType: 'Onboarding', program: 'Diseños Temáticos', detail: 'Campañas WhatsApp', date: '2026-03-01', duration: 5, priority: 'Baja', completed: false, createdAt: 10 },
-            { id: 11, area: 'Diseño', client: 'Equipo XP', programType: 'Transversal', program: 'Saludo Clientes', detail: 'Días festivos', date: '2026-02-01', duration: 3, priority: 'Baja', completed: false, createdAt: 11 },
-            { id: 12, area: 'Diseño', client: 'Walmart', programType: 'Apertura', program: 'Testimonios Apertura', detail: 'Videos 2026', date: '2026-05-01', duration: 10, priority: 'Baja', completed: false, createdAt: 12 },
-            { id: 13, area: 'Diseño', client: 'Walmart', programType: 'Apertura', program: 'Presentaciones', detail: 'Actualización diseño', date: '2026-01-31', duration: 5, priority: 'Baja', completed: false, createdAt: 13 },
-            { id: 14, area: 'AudioVisual', client: 'Walmart', programType: 'Onboarding', program: 'Testimonio OB', detail: 'Experiencia', date: '2026-06-01', duration: 7, priority: 'Baja', completed: false, createdAt: 14 },
-            { id: 15, area: 'AudioVisual', client: 'Walmart', programType: 'Onboarding', program: 'Video Bienvenida', detail: 'Visualización programa', date: '2026-11-01', duration: 7, priority: 'Baja', completed: false, createdAt: 15 },
-            { id: 16, area: 'AudioVisual', client: 'Parque R.', programType: '', program: 'Video Impacto', detail: 'Semestral', date: '2026-07-01', duration: 10, priority: 'Baja', completed: false, createdAt: 16 },
-            { id: 17, area: 'AudioVisual', client: 'Metlife', programType: '', program: 'Video Impacto', detail: 'Cierre con testimonios', date: '2026-11-01', duration: 7, priority: 'Baja', completed: false, createdAt: 17 },
-            { id: 18, area: 'Diseño', client: 'Ripley', programType: '', program: 'GIFs Fechas', detail: 'Navidad, Fiestas Patrias', date: '2026-03-02', duration: 10, priority: 'Baja', completed: false, createdAt: 18 },
-            { id: 19, area: 'AudioVisual', client: 'Ripley', programType: '', program: 'Cierre Trimestre', detail: 'Video indicadores', date: '2026-04-03', duration: 5, priority: 'Baja', completed: false, createdAt: 19 },
-            { id: 20, area: 'AudioVisual', client: 'Ripley', programType: '', program: 'Impacto Semestral', detail: 'Motivacional', date: '2026-05-29', duration: 5, priority: 'Baja', completed: false, createdAt: 20 },
-            { id: 21, area: 'Diseño', client: 'Ripley', programType: '', program: 'Galardón Fin Año', detail: 'Reconocimiento tiendas', date: '2026-11-08', duration: 5, priority: 'Baja', completed: false, createdAt: 21 },
-            { id: 22, area: 'AudioVisual', client: 'Ripley', programType: '', program: 'Video Cierre Año', detail: 'Recopilación premios', date: '2026-12-04', duration: 7, priority: 'Baja', completed: false, createdAt: 22 },
-            { id: 23, area: 'AudioVisual', client: 'Scheckers', programType: '', program: 'Cápsula Febrero', detail: 'Entrega feb', date: '2026-02-03', duration: 5, priority: 'Media', completed: false, createdAt: 23 },
-            { id: 24, area: 'Diseño', client: 'Scheckers', programType: '', program: 'Infografía Febrero', detail: 'Entrega feb', date: '2026-02-03', duration: 3, priority: 'Media', completed: false, createdAt: 24 },
-            { id: 25, area: 'Diseño', client: 'Walmart', programType: 'Onboarding', program: 'Infografías OB', detail: 'Nuevo formato', date: '2026-01-26', duration: 5, priority: 'Media', completed: false, createdAt: 25 },
-            { id: 26, area: 'Diseño', client: 'Walmart', programType: 'Onboarding', program: 'QR Tiendas', detail: 'Imágenes QR', date: '2026-01-26', duration: 2, priority: 'Media', completed: false, createdAt: 26 },
-            { id: 27, area: 'Diseño', client: 'Equipo XP', programType: 'Transversal', program: 'XP News', detail: 'Nuevo template', date: '2026-03-01', duration: 3, priority: 'Media', completed: false, createdAt: 27 },
-            { id: 28, area: 'Diseño', client: 'Walmart', programType: 'Apertura', program: 'Estructura Procesos', detail: 'Revisión flujograma', date: '2026-01-31', duration: 3, priority: 'Media', completed: false, createdAt: 28 },
-            { id: 29, area: 'Diseño', client: 'Walmart', programType: 'Apertura', program: 'Videos Testimonios', detail: 'Diseño gráfica 2025', date: '2026-02-01', duration: 4, priority: 'Media', completed: false, createdAt: 29 },
-            { id: 30, area: 'Diseño', client: 'Walmart', programType: 'Apertura', program: 'Videos APT', detail: 'Testimonios e hitos', date: '2026-02-01', duration: 4, priority: 'Media', completed: false, createdAt: 30 },
-            { id: 31, area: 'Diseño', client: 'Equipo XP', programType: 'Transversal', program: 'Taller DEI', detail: 'Diseño presentación Diversidad e Inclusión', date: '2026-03-02', duration: 5, priority: 'Media', completed: false, createdAt: 31 },
-            { id: 32, area: 'Diseño', client: 'Equipo XP', programType: 'Transversal', program: 'Infografía DJ', detail: 'Instructivo DJ Elearning', date: '2026-02-15', duration: 3, priority: 'Media', completed: false, createdAt: 32 },
-            { id: 33, area: 'AudioVisual', client: 'Equipo XP', programType: 'Transversal', program: 'Video DJ', detail: 'Video corto instructivo DJ', date: '2026-02-15', duration: 4, priority: 'Media', completed: false, createdAt: 33 },
-            { id: 34, area: 'Diseño', client: 'Equipo XP', programType: 'Transversal', program: 'Template Cowork', detail: 'Renovar nueva cara del año', date: '2026-02-15', duration: 3, priority: 'Baja', completed: false, createdAt: 34 },
-            { id: 35, area: 'AudioVisual', client: 'Equipo XP', programType: 'Transversal', program: 'Web / Redes', detail: 'Renovar videos equipo y web', date: '2026-06-01', duration: 10, priority: 'Baja', completed: false, createdAt: 35 },
-            { id: 36, area: 'AudioVisual', client: 'Ripley', programType: '', program: 'Impacto Anual', detail: 'Video cierre programa, material recopilatorio', date: '2026-11-01', duration: 7, priority: 'Baja', completed: false, createdAt: 36 }
+            { id: 1, area: 'AudioVisual', client: 'Scheckers', programType: '', program: 'Video-cápsula Enero', detail: 'Entrega segunda semana enero', date: '2026-01-06', duration: 7, priority: 'Alta', completed: false, pinned: false, createdAt: 1 },
+            { id: 2, area: 'Diseño', client: 'Scheckers', programType: '', program: 'Infografía Enero', detail: 'Entrega segunda semana enero', date: '2026-01-06', duration: 4, priority: 'Alta', completed: false, pinned: false, createdAt: 2 },
+            { id: 3, area: 'Diseño', client: 'Metlife', programType: '', program: 'BOOK Imprimible', detail: 'Ajustes de jota (Bordes)', date: '2026-01-20', duration: 5, priority: 'Alta', completed: false, pinned: false, createdAt: 3 },
+            { id: 4, area: 'Diseño', client: 'Metlife', programType: '', program: 'Módulo VENTAS', detail: 'Nuevo Manual', date: '2026-01-26', duration: 7, priority: 'Alta', completed: false, pinned: false, createdAt: 4 },
+            { id: 5, area: 'Diseño', client: 'Ripley', programType: '', program: 'Pendón Onboarding', detail: 'Guía centro formación', date: '2026-01-12', duration: 3, priority: 'Alta', completed: false, pinned: false, createdAt: 5 },
+            { id: 6, area: 'Diseño', client: 'Ripley', programType: '', program: 'Poster Tienda', detail: 'Esquema talleres', date: '2026-01-15', duration: 2, priority: 'Media', completed: false, pinned: false, createdAt: 6 },
+            { id: 7, area: 'Diseño', client: 'Ripley', programType: '', program: 'Infografía Jecyp', detail: 'Guía buenas prácticas', date: '2026-01-15', duration: 2, priority: 'Media', completed: false, pinned: false, createdAt: 7 },
+            { id: 8, area: 'Diseño', client: 'Ripley', programType: '', program: 'Fotos de Equipo', detail: 'Fotos profesionales', date: '2026-01-26', duration: 1, priority: 'Alta', completed: false, pinned: false, createdAt: 8 },
+            { id: 9, area: 'AudioVisual', client: 'Ripley', programType: '', program: 'Video Interactivo', detail: 'Guion uso Rposs', date: '2026-01-31', duration: 5, priority: 'Media', completed: false, pinned: false, createdAt: 9 },
+            { id: 10, area: 'Diseño', client: 'Walmart', programType: 'Onboarding', program: 'Diseños Temáticos', detail: 'Campañas WhatsApp', date: '2026-03-01', duration: 5, priority: 'Baja', completed: false, pinned: false, createdAt: 10 },
+            { id: 11, area: 'Diseño', client: 'Equipo XP', programType: 'Transversal', program: 'Saludo Clientes', detail: 'Días festivos', date: '2026-02-01', duration: 3, priority: 'Baja', completed: false, pinned: false, createdAt: 11 },
+            { id: 12, area: 'Diseño', client: 'Walmart', programType: 'Apertura', program: 'Testimonios Apertura', detail: 'Videos 2026', date: '2026-05-01', duration: 10, priority: 'Baja', completed: false, pinned: false, createdAt: 12 },
+            { id: 13, area: 'Diseño', client: 'Walmart', programType: 'Apertura', program: 'Presentaciones', detail: 'Actualización diseño', date: '2026-01-31', duration: 5, priority: 'Baja', completed: false, pinned: false, createdAt: 13 },
+            { id: 14, area: 'AudioVisual', client: 'Walmart', programType: 'Onboarding', program: 'Testimonio OB', detail: 'Experiencia', date: '2026-06-01', duration: 7, priority: 'Baja', completed: false, pinned: false, createdAt: 14 },
+            { id: 15, area: 'AudioVisual', client: 'Walmart', programType: 'Onboarding', program: 'Video Bienvenida', detail: 'Visualización programa', date: '2026-11-01', duration: 7, priority: 'Baja', completed: false, pinned: false, createdAt: 15 },
+            { id: 16, area: 'AudioVisual', client: 'Parque R.', programType: '', program: 'Video Impacto', detail: 'Semestral', date: '2026-07-01', duration: 10, priority: 'Baja', completed: false, pinned: false, createdAt: 16 },
+            { id: 17, area: 'AudioVisual', client: 'Metlife', programType: '', program: 'Video Impacto', detail: 'Cierre con testimonios', date: '2026-11-01', duration: 7, priority: 'Baja', completed: false, pinned: false, createdAt: 17 },
+            { id: 18, area: 'Diseño', client: 'Ripley', programType: '', program: 'GIFs Fechas', detail: 'Navidad, Fiestas Patrias', date: '2026-03-02', duration: 10, priority: 'Baja', completed: false, pinned: false, createdAt: 18 },
+            { id: 19, area: 'AudioVisual', client: 'Ripley', programType: '', program: 'Cierre Trimestre', detail: 'Video indicadores', date: '2026-04-03', duration: 5, priority: 'Baja', completed: false, pinned: false, createdAt: 19 },
+            { id: 20, area: 'AudioVisual', client: 'Ripley', programType: '', program: 'Impacto Semestral', detail: 'Motivacional', date: '2026-05-29', duration: 5, priority: 'Baja', completed: false, pinned: false, createdAt: 20 },
+            { id: 21, area: 'Diseño', client: 'Ripley', programType: '', program: 'Galardón Fin Año', detail: 'Reconocimiento tiendas', date: '2026-11-08', duration: 5, priority: 'Baja', completed: false, pinned: false, createdAt: 21 },
+            { id: 22, area: 'AudioVisual', client: 'Ripley', programType: '', program: 'Video Cierre Año', detail: 'Recopilación premios', date: '2026-12-04', duration: 7, priority: 'Baja', completed: false, pinned: false, createdAt: 22 },
+            { id: 23, area: 'AudioVisual', client: 'Scheckers', programType: '', program: 'Cápsula Febrero', detail: 'Entrega feb', date: '2026-02-03', duration: 5, priority: 'Media', completed: false, pinned: false, createdAt: 23 },
+            { id: 24, area: 'Diseño', client: 'Scheckers', programType: '', program: 'Infografía Febrero', detail: 'Entrega feb', date: '2026-02-03', duration: 3, priority: 'Media', completed: false, pinned: false, createdAt: 24 },
+            { id: 25, area: 'Diseño', client: 'Walmart', programType: 'Onboarding', program: 'Infografías OB', detail: 'Nuevo formato', date: '2026-01-26', duration: 5, priority: 'Media', completed: false, pinned: false, createdAt: 25 },
+            { id: 26, area: 'Diseño', client: 'Walmart', programType: 'Onboarding', program: 'QR Tiendas', detail: 'Imágenes QR', date: '2026-01-26', duration: 2, priority: 'Media', completed: false, pinned: false, createdAt: 26 },
+            { id: 27, area: 'Diseño', client: 'Equipo XP', programType: 'Transversal', program: 'XP News', detail: 'Nuevo template', date: '2026-03-01', duration: 3, priority: 'Media', completed: false, pinned: false, createdAt: 27 },
+            { id: 28, area: 'Diseño', client: 'Walmart', programType: 'Apertura', program: 'Estructura Procesos', detail: 'Revisión flujograma', date: '2026-01-31', duration: 3, priority: 'Media', completed: false, pinned: false, createdAt: 28 },
+            { id: 29, area: 'Diseño', client: 'Walmart', programType: 'Apertura', program: 'Videos Testimonios', detail: 'Diseño gráfica 2025', date: '2026-02-01', duration: 4, priority: 'Media', completed: false, pinned: false, createdAt: 29 },
+            { id: 30, area: 'Diseño', client: 'Walmart', programType: 'Apertura', program: 'Videos APT', detail: 'Testimonios e hitos', date: '2026-02-01', duration: 4, priority: 'Media', completed: false, pinned: false, createdAt: 30 },
+            { id: 31, area: 'Diseño', client: 'Equipo XP', programType: 'Transversal', program: 'Taller DEI', detail: 'Diseño presentación Diversidad e Inclusión', date: '2026-03-02', duration: 5, priority: 'Media', completed: false, pinned: false, createdAt: 31 },
+            { id: 32, area: 'Diseño', client: 'Equipo XP', programType: 'Transversal', program: 'Infografía DJ', detail: 'Instructivo DJ Elearning', date: '2026-02-15', duration: 3, priority: 'Media', completed: false, pinned: false, createdAt: 32 },
+            { id: 33, area: 'AudioVisual', client: 'Equipo XP', programType: 'Transversal', program: 'Video DJ', detail: 'Video corto instructivo DJ', date: '2026-02-15', duration: 4, priority: 'Media', completed: false, pinned: false, createdAt: 33 },
+            { id: 34, area: 'Diseño', client: 'Equipo XP', programType: 'Transversal', program: 'Template Cowork', detail: 'Renovar nueva cara del año', date: '2026-02-15', duration: 3, priority: 'Baja', completed: false, pinned: false, createdAt: 34 },
+            { id: 35, area: 'AudioVisual', client: 'Equipo XP', programType: 'Transversal', program: 'Web / Redes', detail: 'Renovar videos equipo y web', date: '2026-06-01', duration: 10, priority: 'Baja', completed: false, pinned: false, createdAt: 35 },
+            { id: 36, area: 'AudioVisual', client: 'Ripley', programType: '', program: 'Impacto Anual', detail: 'Video cierre programa, material recopilatorio', date: '2026-11-01', duration: 7, priority: 'Baja', completed: false, pinned: false, createdAt: 36 }
         ];
 
-        let tasks = JSON.parse(localStorage.getItem('creativeTasks_2026_v10')) || INITIAL_TASKS;
+        let tasks = JSON.parse(localStorage.getItem('creativeTasks_2026_v11')) || INITIAL_TASKS;
         if(tasks.length < 5) tasks = INITIAL_TASKS;
 
         // Init Settings (Clients / Programs)
@@ -440,7 +443,7 @@
             programTypes: savedPrograms || ["Onboarding", "Apertura", "Transversal", "Cierre", "Otro"]
         };
 
-        const saveTasks = () => localStorage.setItem('creativeTasks_2026_v10', JSON.stringify(tasks));
+        const saveTasks = () => localStorage.setItem('creativeTasks_2026_v11', JSON.stringify(tasks));
         const saveSettings = () => {
             localStorage.setItem('creativeClients_2026', JSON.stringify(state.clients));
             localStorage.setItem('creativePrograms_2026', JSON.stringify(state.programTypes));
@@ -502,10 +505,18 @@
 
                 return matchArea && matchPriority && matchSearch && matchStatus;
             });
-            if (state.sortBy === 'recent') {
-                return filtered.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
-            }
-            return filtered.sort((a,b) => new Date(a.date) - new Date(b.date));
+            
+            return filtered.sort((a,b) => {
+                // 1. Pinned status first
+                if (a.pinned && !b.pinned) return -1;
+                if (!a.pinned && b.pinned) return 1;
+
+                // 2. Fallback to normal sort
+                if (state.sortBy === 'recent') {
+                    return (b.createdAt || 0) - (a.createdAt || 0);
+                }
+                return new Date(a.date) - new Date(b.date);
+            });
         };
 
         // --- CORE RENDER ---
@@ -566,7 +577,7 @@
             
             tasks.forEach(task => {
                 const card = document.createElement('div');
-                card.className = "group bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-lg hover:border-indigo-100 hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden relative min-h-[200px] cursor-pointer";
+                card.className = `group bg-white rounded-xl shadow-sm border hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden relative min-h-[200px] cursor-pointer ${task.pinned ? 'border-amber-300 ring-2 ring-amber-100 ring-offset-2' : 'border-slate-200 hover:border-indigo-100'}`;
                 card.onclick = (e) => { if(!e.target.closest('button')) openTaskModal(task.id); };
                 
                 card.innerHTML = `
@@ -574,11 +585,15 @@
                     <div class="p-5 flex-1 flex flex-col">
                         <div class="flex justify-between items-start mb-3">
                              <div class="flex items-center gap-2">
+                                <button onclick="togglePin(event, ${task.id})" class="transition-transform hover:scale-110 ${task.pinned ? 'text-amber-500' : 'text-slate-300 hover:text-slate-500'}" title="${task.pinned ? 'Desfijar tarea' : 'Fijar tarea'}">
+                                    <i data-lucide="pin" class="w-4 h-4" ${task.pinned ? 'fill="currentColor"' : ''}></i>
+                                </button>
                                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${getPriorityColor(task.priority)}">${task.priority}</span>
-                                <button onclick="toggleComplete(${task.id})" class="text-slate-200 hover:text-emerald-500 hover:scale-110 transition-transform" title="Marcar como completada"><i data-lucide="check-circle-2" class="w-5 h-5"></i></button>
+                                ${task.completed ? '<i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500"></i>' : ''}
                              </div>
-                             <div class="flex items-center gap-1">
-                                <span class="text-[10px] font-medium text-slate-400 uppercase tracking-wide mr-1">${task.area}</span>
+                             <div class="flex items-center gap-2">
+                                <button onclick="toggleComplete(${task.id})" class="text-slate-200 hover:text-emerald-500 hover:scale-110 transition-transform" title="Marcar como completada"><i data-lucide="check-circle-2" class="w-4 h-4"></i></button>
+                                <span class="text-[10px] font-medium text-slate-400 uppercase tracking-wide">${task.area}</span>
                              </div>
                         </div>
                         <div class="flex-1">
@@ -607,7 +622,7 @@
             listDiv.className = "flex flex-col gap-3 w-full";
             tasks.forEach(task => {
                 const item = document.createElement('div');
-                item.className = "group bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md hover:border-indigo-200 transition-all flex flex-row items-center h-20 overflow-hidden shrink-0 cursor-pointer";
+                item.className = `group bg-white rounded-xl shadow-sm border transition-all flex flex-row items-center h-20 overflow-hidden shrink-0 cursor-pointer ${task.pinned ? 'border-amber-300 bg-amber-50/10' : 'border-slate-200 hover:shadow-md hover:border-indigo-200'}`;
                 item.onclick = (e) => { if(!e.target.closest('button') && !e.target.closest('input')) openTaskModal(task.id); };
                 item.innerHTML = `
                     <div class="w-1.5 h-full ${getClientColor(task.client)}"></div>
@@ -615,6 +630,11 @@
                         <div class="w-8 flex justify-center">
                              <button onclick="toggleComplete(${task.id})" class="text-slate-300 hover:text-emerald-500 hover:scale-110 transition-all" title="Completar tarea">
                                 <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                             </button>
+                        </div>
+                        <div class="w-6 flex justify-center">
+                             <button onclick="togglePin(event, ${task.id})" class="transition-transform hover:scale-110 ${task.pinned ? 'text-amber-500' : 'text-slate-300 hover:text-amber-500'}" title="${task.pinned ? 'Desfijar tarea' : 'Fijar tarea'}">
+                                <i data-lucide="pin" class="w-4 h-4" ${task.pinned ? 'fill="currentColor"' : ''}></i>
                              </button>
                         </div>
                         <div class="min-w-[80px]"><span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${getPriorityColor(task.priority)}">${task.priority}</span></div>
@@ -634,6 +654,11 @@
                             <div class="flex items-center justify-end text-xs font-medium text-slate-600 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
                                 <i data-lucide="calendar" class="w-3.5 h-3.5 mr-2 text-indigo-500"></i> ${new Date(task.date + 'T12:00:00').toLocaleDateString('es-CL', {day: 'numeric', month:'short'})}
                             </div>
+                        </div>
+                        <div class="w-8 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                             <button onclick="openContextMenu(event, ${task.id})" class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
+                                <i data-lucide="more-horizontal" class="w-4 h-4"></i>
+                            </button>
                         </div>
                     </div>`;
                 listDiv.appendChild(item);
@@ -659,7 +684,7 @@
             listDiv.className = "flex flex-col gap-3 w-full";
             tasks.forEach(task => {
                 const item = document.createElement('div');
-                item.className = "group bg-white rounded-xl shadow-sm border border-slate-200 transition-all flex flex-row items-center h-20 overflow-hidden shrink-0 cursor-pointer opacity-80 hover:opacity-100";
+                item.className = `group bg-white rounded-xl shadow-sm border border-slate-200 transition-all flex flex-row items-center h-20 overflow-hidden shrink-0 cursor-pointer opacity-80 hover:opacity-100 ${task.pinned ? 'border-amber-300' : ''}`;
                 item.onclick = (e) => { if(!e.target.closest('button')) openTaskModal(task.id); };
                 item.innerHTML = `
                     <div class="w-1.5 h-full ${getClientColor(task.client)} grayscale"></div>
@@ -667,6 +692,11 @@
                         <div class="w-8 flex justify-center">
                              <button onclick="toggleComplete(${task.id})" class="text-emerald-500 hover:text-slate-400 hover:scale-110 transition-all" title="Recuperar a pendientes">
                                 <i data-lucide="check-circle-2" class="w-5 h-5" fill="#10b981" stroke="white"></i>
+                             </button>
+                        </div>
+                        <div class="w-6 flex justify-center">
+                             <button onclick="togglePin(event, ${task.id})" class="transition-transform hover:scale-110 ${task.pinned ? 'text-amber-500' : 'text-slate-300'}" title="${task.pinned ? 'Desfijar tarea' : 'Fijar tarea'}">
+                                <i data-lucide="pin" class="w-4 h-4" ${task.pinned ? 'fill="currentColor"' : ''}></i>
                              </button>
                         </div>
                         <div class="min-w-[80px]"><span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${getPriorityColor(task.priority)} grayscale opacity-70">${task.priority}</span></div>
@@ -728,7 +758,11 @@
                     cell.innerHTML = `<div class="flex justify-between items-start mb-1"><span class="text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-700'}">${d}</span></div>`;
                     tasks.filter(t => t.date === dateStr).forEach(t => {
                         const bg = getClientColor(t.client);
-                        cell.innerHTML += `<div onclick="openTaskModal(${t.id})" class="group text-[10px] px-2 py-1 rounded-md shadow-sm text-white ${bg} cursor-pointer hover:brightness-110 truncate font-medium" title="${t.program}">${t.program}</div>`;
+                        cell.innerHTML += `
+                            <div onclick="openTaskModal(${t.id})" class="group flex items-center gap-1 text-[10px] px-2 py-1 rounded-md shadow-sm text-white ${bg} cursor-pointer hover:brightness-110 truncate font-medium ${t.pinned ? 'ring-1 ring-white/50 border-l-2 border-amber-300' : ''}" title="${t.program}">
+                                ${t.pinned ? '<i data-lucide="pin" class="w-2.5 h-2.5 text-amber-200" fill="currentColor"></i>' : ''}
+                                <span class="truncate">${t.program}</span>
+                            </div>`;
                     });
                     if(isToday) cell.classList.add('bg-indigo-50/30');
                     dayCounter++;
@@ -747,8 +781,9 @@
             editorDiv.className = "bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden relative h-[450px] shrink-0";
             editorDiv.innerHTML = `
                 <div class="px-5 py-3 bg-slate-50 border-b border-slate-200 font-semibold text-slate-700 text-sm flex items-center gap-2"><i data-lucide="table-2" class="w-4 h-4 text-slate-400"></i> Editor de Tareas</div>
-                <div class="grid grid-cols-[40px_140px_1fr_110px_70px_110px_40px] bg-slate-50/50 font-bold border-b border-slate-200 text-slate-500 text-[10px] uppercase tracking-wider h-[40px] items-center shrink-0">
+                <div class="grid grid-cols-[40px_40px_140px_1fr_110px_70px_110px_40px] bg-slate-50/50 font-bold border-b border-slate-200 text-slate-500 text-[10px] uppercase tracking-wider h-[40px] items-center shrink-0">
                     <div class="border-r h-full flex items-center justify-center">#</div>
+                    <div class="border-r h-full flex items-center justify-center"><i data-lucide="pin" class="w-3 h-3"></i></div>
                     <div class="px-3 border-r h-full flex items-center">Cliente</div>
                     <div class="px-3 border-r h-full flex items-center">Programa</div>
                     <div class="px-1 border-r h-full flex items-center justify-center">Inicio</div>
@@ -759,10 +794,11 @@
             editorBody.className = "overflow-y-auto flex-1 bg-white custom-scrollbar";
             filteredTasks.forEach(task => {
                 const row = document.createElement('div');
-                row.className = `grid grid-cols-[40px_140px_1fr_110px_70px_110px_40px] border-b border-slate-100 hover:bg-slate-50 transition-colors items-center h-[44px] cursor-pointer`;
+                row.className = `grid grid-cols-[40px_40px_140px_1fr_110px_70px_110px_40px] border-b border-slate-100 hover:bg-slate-50 transition-colors items-center h-[44px] cursor-pointer ${task.pinned ? 'bg-amber-50/10' : ''}`;
                 row.onclick = (e) => { if(!e.target.closest('button') && !e.target.closest('input')) openTaskModal(task.id); };
                 row.innerHTML = `
                     <div class="border-r h-full flex items-center justify-center"><button onclick="toggleComplete(${task.id})" class="text-slate-300 hover:text-emerald-500"><i data-lucide="check-circle-2" class="w-4 h-4"></i></button></div>
+                    <div class="border-r h-full flex items-center justify-center"><button onclick="togglePin(event, ${task.id})" class="transition-transform hover:scale-110 ${task.pinned ? 'text-amber-500' : 'text-slate-300 hover:text-amber-500'}"><i data-lucide="pin" class="w-4 h-4" ${task.pinned ? 'fill="currentColor"' : ''}></i></button></div>
                     <div class="border-r h-full px-2 py-1 flex items-center"><div class="w-full h-7 px-2 rounded-md flex items-center justify-center text-[10px] font-bold truncate ${getClientBadge(task.client)}">${task.client}</div></div>
                     <div class="border-r h-full px-3 py-1 flex items-center text-xs font-semibold text-slate-700 truncate">${task.program}</div>
                     <div class="border-r h-full px-1 py-1 flex items-center justify-center text-xs font-mono text-slate-600">${task.date}</div>
@@ -787,7 +823,12 @@
             const labelBody = document.createElement('div');
             labelBody.className = "overflow-hidden flex-1 bg-white pt-0";
             filteredTasks.forEach(task => {
-                labelBody.innerHTML += `<div onclick="openTaskModal(${task.id})" class="border-b border-slate-100 px-4 flex items-center text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors h-[44px] cursor-pointer"><div class="w-2 h-2 rounded-full mr-3 shrink-0 ${getClientColor(task.client).split(' ')[0]} shadow-sm"></div><span class="truncate">${task.program}</span></div>`;
+                labelBody.innerHTML += `
+                    <div onclick="openTaskModal(${task.id})" class="border-b border-slate-100 px-4 flex items-center gap-2 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors h-[44px] cursor-pointer ${task.pinned ? 'bg-amber-50/10' : ''}">
+                        <div class="w-2 h-2 rounded-full shrink-0 ${getClientColor(task.client).split(' ')[0]} shadow-sm"></div>
+                        <span class="truncate flex-1">${task.program}</span>
+                        ${task.pinned ? '<i data-lucide="pin" class="w-3 h-3 text-amber-500 shrink-0" fill="currentColor"></i>' : ''}
+                    </div>`;
             });
             leftLabels.appendChild(labelBody);
 
@@ -829,7 +870,12 @@
                 const left = Math.ceil(diff/(1000*60*60*24)) * DAY_WIDTH;
                 const width = task.duration * DAY_WIDTH;
                 const colorClass = `${getClientBadge(task.client).split(' ')[0]} ${getClientBadge(task.client).split(' ')[1]}`;
-                barsContainer.innerHTML += `<div class="w-full relative border-b border-slate-100/50 hover:bg-indigo-50/10 transition-colors h-[44px]"><div onclick="openTaskModal(${task.id})" class="absolute top-1/2 -translate-y-1/2 h-7 rounded-md shadow-sm border border-white/20 ring-1 text-xs flex items-center px-2 whitespace-nowrap overflow-hidden cursor-pointer hover:shadow-md hover:scale-[1.01] transition-all ${colorClass}" style="left:${left+2}px;width:${width-4}px" title="${task.program}">${width>30?`<span class="font-bold text-[10px] truncate">${task.program}</span>`:''}</div></div>`;
+                barsContainer.innerHTML += `
+                    <div class="w-full relative border-b border-slate-100/50 transition-colors h-[44px]">
+                        <div onclick="openTaskModal(${task.id})" class="absolute top-1/2 -translate-y-1/2 h-7 rounded-md shadow-sm border border-white/20 ring-1 text-xs flex items-center px-2 whitespace-nowrap overflow-hidden cursor-pointer hover:shadow-md hover:scale-[1.01] transition-all ${colorClass} ${task.pinned ? 'ring-amber-300 ring-2 shadow-amber-200' : ''}" style="left:${left+2}px;width:${width-4}px" title="${task.program}">
+                             ${width>30?`<span class="font-bold text-[10px] truncate">${task.program}</span>`:''}
+                        </div>
+                    </div>`;
             });
             contentInner.appendChild(barsContainer);
             
@@ -1035,7 +1081,7 @@
                     showToast('Tarea actualizada');
                 }
             } else {
-                const newTask = { id: Date.now(), ...taskData, completed: false, createdAt: Date.now() };
+                const newTask = { id: Date.now(), ...taskData, completed: false, pinned: false, createdAt: Date.now() };
                 tasks.push(newTask);
                 if(state.view !== 'completed') state.sortBy = 'recent';
                 showToast('Tarea creada exitosamente');
@@ -1066,6 +1112,27 @@
                     showToast('Tarea recuperada a pendientes', 'info');
                 }
             } 
+        };
+
+        window.togglePin = function(e, id) {
+            e.stopPropagation();
+            const t = tasks.find(x => x.id === id);
+            if(t) {
+                t.pinned = !t.pinned;
+                saveTasks();
+                renderApp();
+                showToast(t.pinned ? 'Tarea fijada' : 'Tarea desfijada', 'info');
+            }
+        };
+
+        window.togglePinFromMenu = function() {
+            const t = tasks.find(x => x.id === state.activeMenuTaskId);
+            if(t) {
+                t.pinned = !t.pinned;
+                saveTasks();
+                renderApp();
+                showToast(t.pinned ? 'Tarea fijada' : 'Tarea desfijada', 'info');
+            }
         };
         
         window.openContextMenu = function(e, id) { e.stopPropagation(); state.activeMenuTaskId = id; const m=document.getElementById('context-menu'); const r=e.target.getBoundingClientRect(); m.style.top=`${r.bottom + window.scrollY}px`; m.style.left=`${r.left-150}px`; m.classList.remove('hidden'); };
