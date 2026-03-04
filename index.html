@@ -30,17 +30,6 @@
             height: auto; left: 0; position: absolute; right: 0; top: 0; width: auto;
         }
 
-        /* Ghost Input Animation */
-        .input-ghost {
-            transition: all 0.2s;
-            border-bottom: 1px solid transparent;
-        }
-        .input-ghost:hover, .input-ghost:focus {
-            background-color: #f1f5f9;
-            border-bottom: 1px solid #cbd5e1;
-            padding-left: 4px;
-        }
-
         /* Slider Styling */
         input[type=range] {
             -webkit-appearance: none; 
@@ -116,7 +105,12 @@
                     </div>
 
                     <!-- Filters -->
-                    <div class="flex gap-2 w-full sm:w-auto">
+                    <div class="flex gap-2 w-full sm:w-auto flex-wrap">
+                        <!-- Filtro de Clientes -->
+                        <select id="filter-client" onchange="handleFilterClient(this.value)" class="block px-3 py-1.5 text-sm bg-white border border-slate-200 rounded-lg focus:ring-indigo-500 outline-none cursor-pointer hover:bg-slate-50">
+                            <!-- Populated by JS -->
+                        </select>
+
                         <select id="filter-area" onchange="handleFilterArea(this.value)" class="block px-3 py-1.5 text-sm bg-white border border-slate-200 rounded-lg focus:ring-indigo-500 outline-none cursor-pointer hover:bg-slate-50">
                             <option value="Todas">Todas las Áreas</option>
                             <option value="Diseño">🎨 Diseño</option>
@@ -316,7 +310,7 @@
                     </div>
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Días</label>
-                        <input type="number" id="modal-duration" value="3" min="1" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                        <input type="number" id="modal-duration" value="1" min="1" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
                     </div>
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Prioridad</label>
@@ -365,6 +359,19 @@
     </div>
 
     <script>
+        // --- SECURE HTML ESCAPER ---
+        const escapeHtml = (unsafe) => {
+            return (unsafe || '').toString().replace(/[&<"'>]/g, function (match) {
+                switch (match) {
+                    case '&': return '&amp;';
+                    case '<': return '&lt;';
+                    case '>': return '&gt;';
+                    case '"': return '&quot;';
+                    case "'": return '&#039;';
+                }
+            });
+        };
+
         // --- TOAST SYSTEM ---
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
@@ -372,7 +379,7 @@
             const colors = type === 'success' ? 'bg-emerald-500' : (type === 'info' ? 'bg-slate-800' : 'bg-red-500');
             const icon = type === 'success' ? 'check-circle' : 'info';
             toast.className = `toast-enter pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg shadow-slate-200 text-white text-sm font-medium ${colors} min-w-[300px]`;
-            toast.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5"></i> ${message}`;
+            toast.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5"></i> ${escapeHtml(message)}`;
             container.appendChild(toast);
             lucide.createIcons();
             setTimeout(() => {
@@ -423,7 +430,7 @@
             { id: 36, area: 'AudioVisual', client: 'Ripley', programType: '', program: 'Impacto Anual', detail: 'Video cierre programa, material recopilatorio', date: '2026-11-01', duration: 7, priority: 'Baja', completed: false, pinned: false, createdAt: 36 }
         ];
 
-        let tasks = JSON.parse(localStorage.getItem('creativeTasks_2026_v11')) || INITIAL_TASKS;
+        let tasks = JSON.parse(localStorage.getItem('creativeTasks_2026_v13')) || INITIAL_TASKS;
         if(tasks.length < 5) tasks = INITIAL_TASKS;
 
         // Init Settings (Clients / Programs)
@@ -432,6 +439,7 @@
 
         let state = {
             view: 'grid',
+            filterClient: 'Todas',
             filterArea: 'Todas',
             filterPriority: 'Todas',
             searchTerm: '',
@@ -443,24 +451,29 @@
             programTypes: savedPrograms || ["Onboarding", "Apertura", "Transversal", "Cierre", "Otro"]
         };
 
-        const saveTasks = () => localStorage.setItem('creativeTasks_2026_v11', JSON.stringify(tasks));
+        const saveTasks = () => localStorage.setItem('creativeTasks_2026_v13', JSON.stringify(tasks));
         const saveSettings = () => {
             localStorage.setItem('creativeClients_2026', JSON.stringify(state.clients));
             localStorage.setItem('creativePrograms_2026', JSON.stringify(state.programTypes));
         };
 
         // --- HELPERS ---
-        const addDays = (dateStr, days) => {
-            const date = new Date(dateStr + 'T12:00:00');
-            date.setDate(date.getDate() + parseInt(days));
+        
+        // 1 día = Start Date. 2 días = Start Date + 1
+        const getEndDate = (startStr, duration) => {
+            if (!startStr) return '';
+            const date = new Date(startStr + 'T12:00:00');
+            date.setDate(date.getDate() + parseInt(duration) - 1);
             return date.toISOString().split('T')[0];
         };
 
+        // Same day = 1 day duration. +1 day = 2 day duration
         const getDaysDiff = (startStr, endStr) => {
             const d1 = new Date(startStr + 'T12:00:00');
             const d2 = new Date(endStr + 'T12:00:00');
             const diffTime = d2 - d1;
-            return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            return diffDays > 0 ? diffDays : 1; 
         };
 
         const getPriorityColor = (p) => {
@@ -493,6 +506,7 @@
 
         const getFilteredTasks = () => {
             const filtered = tasks.filter(t => {
+                const matchClientF = state.filterClient === 'Todas' || t.client === state.filterClient;
                 const matchArea = state.filterArea === 'Todas' || t.area === state.filterArea;
                 const matchPriority = state.filterPriority === 'Todas' || t.priority === state.filterPriority;
                 const search = state.searchTerm.toLowerCase();
@@ -503,15 +517,13 @@
                 const matchSearch = safeClient.includes(search) || safeProgram.includes(search) || safeDetail.includes(search);
                 const matchStatus = state.view === 'completed' ? t.completed : !t.completed;
 
-                return matchArea && matchPriority && matchSearch && matchStatus;
+                return matchClientF && matchArea && matchPriority && matchSearch && matchStatus;
             });
             
             return filtered.sort((a,b) => {
-                // 1. Pinned status first
                 if (a.pinned && !b.pinned) return -1;
                 if (!a.pinned && b.pinned) return 1;
 
-                // 2. Fallback to normal sort
                 if (state.sortBy === 'recent') {
                     return (b.createdAt || 0) - (a.createdAt || 0);
                 }
@@ -520,7 +532,22 @@
         };
 
         // --- CORE RENDER ---
+        function renderFilters() {
+            const clientFilter = document.getElementById('filter-client');
+            if (clientFilter) {
+                const currentVal = state.filterClient;
+                clientFilter.innerHTML = `<option value="Todas">Todos los Clientes</option>` + 
+                    state.clients.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+                clientFilter.value = currentVal;
+            }
+            
+            document.getElementById('filter-area').value = state.filterArea;
+            document.getElementById('filter-priority').value = state.filterPriority;
+            document.getElementById('sort-by').value = state.sortBy;
+        }
+
         function renderApp() {
+            renderFilters();
             renderHeader();
             const container = document.getElementById('app-container');
             container.innerHTML = '';
@@ -598,18 +625,18 @@
                         </div>
                         <div class="flex-1">
                             <div class="flex items-center gap-1.5 mb-1 flex-wrap">
-                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">${task.client}</span>
-                                ${task.programType ? `<span class="text-[9px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 border border-slate-200">${task.programType}</span>` : ''}
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">${escapeHtml(task.client)}</span>
+                                ${task.programType ? `<span class="text-[9px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 border border-slate-200">${escapeHtml(task.programType)}</span>` : ''}
                             </div>
-                            <h2 class="text-base font-bold text-slate-800 leading-snug mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2">${task.program}</h2>
-                            <p class="text-xs text-slate-500 leading-relaxed line-clamp-3">${task.detail || ''}</p>
+                            <h2 class="text-base font-bold text-slate-800 leading-snug mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2">${escapeHtml(task.program)}</h2>
+                            <p class="text-xs text-slate-500 leading-relaxed line-clamp-3">${escapeHtml(task.detail) || ''}</p>
                         </div>
                         <div class="flex items-center justify-between text-xs text-slate-400 mt-4 pt-4 border-t border-slate-50">
                             <div class="flex items-center gap-1.5">
                                 <i data-lucide="calendar" class="w-3.5 h-3.5 text-indigo-400"></i> 
                                 <span class="font-medium text-slate-600">${new Date(task.date + 'T12:00:00').toLocaleDateString('es-CL')}</span>
                             </div>
-                            <span class="font-medium bg-slate-50 px-2 py-0.5 rounded text-slate-500">${task.duration} días</span>
+                            <span class="font-medium bg-slate-50 px-2 py-0.5 rounded text-slate-500">${task.duration} ${task.duration === 1 ? 'día' : 'días'}</span>
                         </div>
                     </div>`;
                 gridDiv.appendChild(card);
@@ -640,10 +667,11 @@
                         <div class="min-w-[80px]"><span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${getPriorityColor(task.priority)}">${task.priority}</span></div>
                         <div class="flex-1 min-w-[200px]">
                             <div class="flex items-center gap-2 mb-0.5">
-                                <h3 class="text-[10px] font-bold uppercase text-slate-400">${task.client}</h3>
-                                ${task.programType ? `<span class="text-[9px] bg-slate-100 px-1.5 rounded text-slate-500 border">${task.programType}</span>` : ''}
+                                <h3 class="text-[10px] font-bold uppercase text-slate-400">${escapeHtml(task.client)}</h3>
+                                ${task.programType ? `<span class="text-[9px] bg-slate-100 px-1.5 rounded text-slate-500 border">${escapeHtml(task.programType)}</span>` : ''}
                             </div>
-                            <div class="text-sm font-bold text-slate-800">${task.program}</div>
+                            <input type="text" value="${escapeHtml(task.program)}" onblur="updateTask(${task.id}, 'program', this.value)" onkeydown="if(event.key==='Enter') this.blur()"
+                                class="w-full text-sm font-bold text-slate-800 bg-transparent input-ghost rounded px-1 -ml-1 ${task.completed ? 'line-through text-slate-400' : ''}">
                         </div>
                         <div class="hidden md:flex flex-1 items-center gap-2">
                              <span class="flex items-center w-fit text-[11px] font-medium text-slate-600 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100">
@@ -651,7 +679,7 @@
                             </span>
                         </div>
                         <div class="text-right min-w-[120px]">
-                            <div class="flex items-center justify-end text-xs font-medium text-slate-600 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+                            <div class="flex items-center justify-end text-xs font-medium text-slate-600 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 group-hover:bg-white group-hover:shadow-sm transition-all">
                                 <i data-lucide="calendar" class="w-3.5 h-3.5 mr-2 text-indigo-500"></i> ${new Date(task.date + 'T12:00:00').toLocaleDateString('es-CL', {day: 'numeric', month:'short'})}
                             </div>
                         </div>
@@ -702,10 +730,10 @@
                         <div class="min-w-[80px]"><span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${getPriorityColor(task.priority)} grayscale opacity-70">${task.priority}</span></div>
                         <div class="flex-1 min-w-[200px]">
                             <div class="flex items-center gap-2 mb-0.5 opacity-70">
-                                <h3 class="text-[10px] font-bold uppercase text-slate-400">${task.client}</h3>
-                                ${task.programType ? `<span class="text-[9px] bg-slate-100 px-1.5 rounded text-slate-500 border">${task.programType}</span>` : ''}
+                                <h3 class="text-[10px] font-bold uppercase text-slate-400">${escapeHtml(task.client)}</h3>
+                                ${task.programType ? `<span class="text-[9px] bg-slate-100 px-1.5 rounded text-slate-500 border">${escapeHtml(task.programType)}</span>` : ''}
                             </div>
-                            <div class="text-sm font-bold text-slate-400 line-through">${task.program}</div>
+                            <div class="text-sm font-bold text-slate-400 line-through">${escapeHtml(task.program)}</div>
                         </div>
                         <div class="hidden md:flex flex-1 items-center gap-2 opacity-70">
                              <span class="flex items-center w-fit text-[11px] font-medium text-slate-500 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100">
@@ -759,9 +787,9 @@
                     tasks.filter(t => t.date === dateStr).forEach(t => {
                         const bg = getClientColor(t.client);
                         cell.innerHTML += `
-                            <div onclick="openTaskModal(${t.id})" class="group flex items-center gap-1 text-[10px] px-2 py-1 rounded-md shadow-sm text-white ${bg} cursor-pointer hover:brightness-110 truncate font-medium ${t.pinned ? 'ring-1 ring-white/50 border-l-2 border-amber-300' : ''}" title="${t.program}">
-                                ${t.pinned ? '<i data-lucide="pin" class="w-2.5 h-2.5 text-amber-200" fill="currentColor"></i>' : ''}
-                                <span class="truncate">${t.program}</span>
+                            <div onclick="openTaskModal(${t.id})" class="group flex items-center gap-1 text-[10px] px-2 py-1 rounded-md shadow-sm text-white ${bg} cursor-pointer hover:brightness-110 truncate font-medium ${t.pinned ? 'ring-1 ring-white/50 border-l-2 border-amber-300' : ''}" title="${escapeHtml(t.program)}">
+                                ${t.pinned ? '<i data-lucide="pin" class="w-2.5 h-2.5 text-amber-200 shrink-0" fill="currentColor"></i>' : ''}
+                                <span class="truncate">${escapeHtml(t.program)}</span>
                             </div>`;
                     });
                     if(isToday) cell.classList.add('bg-indigo-50/30');
@@ -793,17 +821,28 @@
             const editorBody = document.createElement('div');
             editorBody.className = "overflow-y-auto flex-1 bg-white custom-scrollbar";
             filteredTasks.forEach(task => {
+                const endDate = getEndDate(task.date, task.duration);
                 const row = document.createElement('div');
                 row.className = `grid grid-cols-[40px_40px_140px_1fr_110px_70px_110px_40px] border-b border-slate-100 hover:bg-slate-50 transition-colors items-center h-[44px] cursor-pointer ${task.pinned ? 'bg-amber-50/10' : ''}`;
                 row.onclick = (e) => { if(!e.target.closest('button') && !e.target.closest('input')) openTaskModal(task.id); };
                 row.innerHTML = `
                     <div class="border-r h-full flex items-center justify-center"><button onclick="toggleComplete(${task.id})" class="text-slate-300 hover:text-emerald-500"><i data-lucide="check-circle-2" class="w-4 h-4"></i></button></div>
                     <div class="border-r h-full flex items-center justify-center"><button onclick="togglePin(event, ${task.id})" class="transition-transform hover:scale-110 ${task.pinned ? 'text-amber-500' : 'text-slate-300 hover:text-amber-500'}"><i data-lucide="pin" class="w-4 h-4" ${task.pinned ? 'fill="currentColor"' : ''}></i></button></div>
-                    <div class="border-r h-full px-2 py-1 flex items-center"><div class="w-full h-7 px-2 rounded-md flex items-center justify-center text-[10px] font-bold truncate ${getClientBadge(task.client)}">${task.client}</div></div>
-                    <div class="border-r h-full px-3 py-1 flex items-center text-xs font-semibold text-slate-700 truncate">${task.program}</div>
-                    <div class="border-r h-full px-1 py-1 flex items-center justify-center text-xs font-mono text-slate-600">${task.date}</div>
-                    <div class="border-r h-full px-1 py-1 flex items-center justify-center text-xs font-mono text-slate-600">${task.duration}</div>
-                    <div class="h-full px-1 py-1 flex items-center justify-center text-xs font-mono text-slate-500">${addDays(task.date, task.duration)}</div>
+                    <div class="border-r h-full px-2 py-1 flex items-center"><div class="w-full h-7 px-2 rounded-md flex items-center justify-center text-[10px] font-bold truncate ${getClientBadge(task.client)}">${escapeHtml(task.client)}</div></div>
+                    <div class="border-r h-full px-3 py-1 flex items-center">
+                        <input type="text" value="${escapeHtml(task.program)}" onblur="updateTask(${task.id}, 'program', this.value)" onkeydown="if(event.key==='Enter') this.blur()" class="w-full text-xs font-semibold text-slate-700 bg-transparent input-ghost rounded py-1 px-2 cursor-text">
+                    </div>
+                    <div class="border-r h-full px-1 py-1 flex items-center justify-center relative hover:bg-slate-100 transition-colors cursor-pointer group-input">
+                        <input type="date" value="${task.date}" onchange="updateTask(${task.id}, 'date', this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" title="Editar Inicio">
+                        <span class="text-xs font-mono text-slate-600 pointer-events-none group-input-hover:text-indigo-600">${task.date}</span>
+                    </div>
+                    <div class="border-r h-full px-1 py-1 flex items-center justify-center">
+                        <input type="number" min="1" value="${task.duration}" onblur="updateTask(${task.id}, 'duration', this.value)" onkeydown="if(event.key==='Enter') this.blur()" class="w-full h-full bg-transparent border-none outline-none text-center text-xs font-mono text-slate-600 input-ghost rounded cursor-text">
+                    </div>
+                    <div class="h-full px-1 py-1 flex items-center justify-center relative hover:bg-slate-100 cursor-pointer">
+                        <input type="date" value="${endDate}" onchange="updateEnd(${task.id}, '${task.date}', this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" title="Editar Fin">
+                        <span class="text-xs font-mono text-slate-500 pointer-events-none">${endDate}</span>
+                    </div>
                     <div class="h-full flex items-center justify-center"><button onclick="openContextMenu(event, ${task.id})" class="p-1.5 text-slate-400 hover:text-indigo-600"><i data-lucide="more-horizontal" class="w-4 h-4"></i></button></div>`;
                 editorBody.appendChild(row);
             });
@@ -826,7 +865,7 @@
                 labelBody.innerHTML += `
                     <div onclick="openTaskModal(${task.id})" class="border-b border-slate-100 px-4 flex items-center gap-2 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors h-[44px] cursor-pointer ${task.pinned ? 'bg-amber-50/10' : ''}">
                         <div class="w-2 h-2 rounded-full shrink-0 ${getClientColor(task.client).split(' ')[0]} shadow-sm"></div>
-                        <span class="truncate flex-1">${task.program}</span>
+                        <span class="truncate flex-1">${escapeHtml(task.program)}</span>
                         ${task.pinned ? '<i data-lucide="pin" class="w-3 h-3 text-amber-500 shrink-0" fill="currentColor"></i>' : ''}
                     </div>`;
             });
@@ -836,7 +875,7 @@
 
             const timestamps = filteredTasks.map(t => new Date(t.date+'T12:00:00').getTime());
             const minTs = Math.min(...timestamps);
-            const maxTs = Math.max(...filteredTasks.map(t => new Date(addDays(t.date,t.duration)+'T12:00:00').getTime()));
+            const maxTs = Math.max(...filteredTasks.map(t => new Date(getEndDate(t.date,t.duration)+'T12:00:00').getTime()));
             const startBuffer = new Date(minTs); startBuffer.setDate(startBuffer.getDate()-5);
             const endBuffer = new Date(maxTs); endBuffer.setDate(endBuffer.getDate()+30);
             
@@ -867,13 +906,13 @@
             filteredTasks.forEach(task => {
                 const start = new Date(task.date+'T12:00:00').getTime();
                 const diff = start - ganttStartTs;
-                const left = Math.ceil(diff/(1000*60*60*24)) * DAY_WIDTH;
+                const left = Math.floor(diff/(1000*60*60*24)) * DAY_WIDTH;
                 const width = task.duration * DAY_WIDTH;
                 const colorClass = `${getClientBadge(task.client).split(' ')[0]} ${getClientBadge(task.client).split(' ')[1]}`;
                 barsContainer.innerHTML += `
                     <div class="w-full relative border-b border-slate-100/50 transition-colors h-[44px]">
-                        <div onclick="openTaskModal(${task.id})" class="absolute top-1/2 -translate-y-1/2 h-7 rounded-md shadow-sm border border-white/20 ring-1 text-xs flex items-center px-2 whitespace-nowrap overflow-hidden cursor-pointer hover:shadow-md hover:scale-[1.01] transition-all ${colorClass} ${task.pinned ? 'ring-amber-300 ring-2 shadow-amber-200' : ''}" style="left:${left+2}px;width:${width-4}px" title="${task.program}">
-                             ${width>30?`<span class="font-bold text-[10px] truncate">${task.program}</span>`:''}
+                        <div onclick="openTaskModal(${task.id})" class="absolute top-1/2 -translate-y-1/2 h-7 rounded-md shadow-sm border border-white/20 ring-1 text-xs flex items-center px-2 whitespace-nowrap overflow-hidden cursor-pointer hover:shadow-md hover:scale-[1.01] transition-all ${colorClass} ${task.pinned ? 'ring-amber-300 ring-2 shadow-amber-200' : ''}" style="left:${left+2}px;width:${width-4}px" title="${escapeHtml(task.program)}">
+                             ${width>30?`<span class="font-bold text-[10px] truncate">${escapeHtml(task.program)}</span>`:''}
                         </div>
                     </div>`;
             });
@@ -892,14 +931,14 @@
             
             clientList.innerHTML = state.clients.map((c, i) => 
                 `<div class="flex justify-between items-center bg-white p-2 rounded border border-slate-100 shadow-sm text-sm text-slate-600">
-                    <span>${c}</span>
+                    <span>${escapeHtml(c)}</span>
                     <button onclick="removeClient(${i})" class="text-slate-300 hover:text-red-500 p-1"><i data-lucide="x" class="w-3 h-3"></i></button>
                 </div>`
             ).join('');
 
             progList.innerHTML = state.programTypes.map((p, i) => 
                 `<div class="flex justify-between items-center bg-white p-2 rounded border border-slate-100 shadow-sm text-sm text-slate-600">
-                    <span>${p}</span>
+                    <span>${escapeHtml(p)}</span>
                     <button onclick="removeProgramType(${i})" class="text-slate-300 hover:text-red-500 p-1"><i data-lucide="x" class="w-3 h-3"></i></button>
                 </div>`
             ).join('');
@@ -948,6 +987,7 @@
                 state.clients.splice(index, 1);
                 saveSettings();
                 openSettingsModal(); 
+                renderFilters();
             }
         }
 
@@ -966,8 +1006,8 @@
             const btnDelete = document.getElementById('btn-delete-task-modal');
             
             // Populate Selects
-            document.getElementById('modal-client').innerHTML = state.clients.map(c => `<option value="${c}">${c}</option>`).join('');
-            document.getElementById('program-types-list').innerHTML = state.programTypes.map(p => `<option value="${p}">`).join('');
+            document.getElementById('modal-client').innerHTML = state.clients.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+            document.getElementById('program-types-list').innerHTML = state.programTypes.map(p => `<option value="${escapeHtml(p)}">`).join('');
             
             if (taskId) {
                 const task = tasks.find(t => t.id === taskId);
@@ -996,7 +1036,7 @@
                 document.getElementById('modal-program').value = '';
                 document.getElementById('modal-detail').value = '';
                 document.getElementById('modal-program-type').value = '';
-                document.getElementById('modal-duration').value = '3';
+                document.getElementById('modal-duration').value = '1';
                 document.getElementById('modal-date').valueAsDate = new Date();
                 if(state.clients.length > 0) document.getElementById('modal-client').selectedIndex = 0;
             }
@@ -1052,6 +1092,7 @@
                 if (!state.clients.includes(client)) {
                     state.clients.push(client);
                     saveSettings();
+                    renderFilters(); // Refresh the main filter list
                 }
             }
 
@@ -1092,6 +1133,7 @@
         }
 
         // Shared Actions
+        function handleFilterClient(val) { state.filterClient = val; renderApp(); }
         function handleSearch(val) { state.searchTerm = val; renderApp(); }
         function handleFilterArea(val) { state.filterArea = val; renderApp(); }
         function handleFilterPriority(val) { state.filterPriority = val; renderApp(); }
@@ -1100,6 +1142,23 @@
         function setView(mode) { state.view = mode; renderApp(); }
         
         window.changeMonth = function(dir) { state.calendarDate.setMonth(state.calendarDate.getMonth() + dir); renderApp(); };
+        
+        window.updateTask = function(id, field, value) {
+            const task = tasks.find(t => t.id === id);
+            if(task) {
+                if(field === 'duration') value = parseInt(value) || 1;
+                task[field] = value;
+                saveTasks();
+                renderApp();
+                showToast('Cambios guardados', 'success');
+            }
+        };
+
+        window.updateEnd = function(id, startDate, endDate) {
+            const diff = getDaysDiff(startDate, endDate);
+            window.updateTask(id, 'duration', diff);
+        };
+
         window.toggleComplete = function(id) { 
             const t = tasks.find(x => x.id === id); 
             if(t) {
