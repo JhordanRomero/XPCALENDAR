@@ -23,12 +23,11 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; border: 2px solid #f1f5f9; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         
-        /* Ocultar el icono predeterminado del calendario solo si molesta visualmente, 
-           pero SIN overlay transparente que bloquee el cursor */
-        input[type="date"]::-webkit-inner-spin-button,
+        /* Hide scrollbar for clean inputs */
         input[type="date"]::-webkit-calendar-picker-indicator {
-            opacity: 0.5;
-            cursor: pointer;
+            background: transparent;
+            bottom: 0; color: transparent; cursor: pointer;
+            height: auto; left: 0; position: absolute; right: 0; top: 0; width: auto;
         }
 
         /* Ghost Input Animation */
@@ -75,6 +74,13 @@
         /* Modal Animation */
         .modal-enter { opacity: 1 !important; }
         .modal-content-enter { transform: scale(1) !important; }
+
+        /* Sync Indicator */
+        @keyframes pulse-sync {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.1); }
+        }
+        .syncing { animation: pulse-sync 1.5s infinite ease-in-out; }
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden text-slate-800">
@@ -84,8 +90,9 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex items-center gap-3">
-                    <div class="bg-gradient-to-br from-indigo-600 to-violet-600 text-white p-2 rounded-xl shadow-lg shadow-indigo-500/20">
+                    <div class="bg-gradient-to-br from-indigo-600 to-violet-600 text-white p-2 rounded-xl shadow-lg shadow-indigo-500/20 relative">
                         <i data-lucide="layers" class="w-6 h-6"></i>
+                        <div id="cloud-indicator" class="absolute -top-1 -right-1 w-3 h-3 bg-slate-400 rounded-full border-2 border-white transition-colors cursor-help" title="Estado de la base de datos"></div>
                     </div>
                     <div>
                         <h1 class="text-lg font-bold text-slate-900 leading-tight">Creative Suite</h1>
@@ -167,7 +174,7 @@
                     </div>
 
                     <!-- Config Button -->
-                    <button onclick="openSettingsModal()" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors border border-slate-200" title="Configurar Listas (Clientes y Programas)">
+                    <button onclick="openSettingsModal()" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors border border-slate-200" title="Configuración y Respaldos">
                         <i data-lucide="settings" class="w-5 h-5"></i>
                     </button>
 
@@ -183,63 +190,84 @@
     <main class="flex-1 overflow-y-auto bg-slate-50 relative custom-scrollbar">
         <div id="app-container" class="max-w-7xl mx-auto flex flex-col relative p-4 sm:p-6 pb-20">
             <!-- Content Injected Here -->
+            <div class="flex flex-col items-center justify-center h-full text-slate-400 opacity-60 pt-20">
+                <i data-lucide="loader-2" class="w-12 h-12 mb-4 animate-spin text-indigo-500"></i>
+                <p class="text-lg font-medium">Iniciando aplicación...</p>
+            </div>
         </div>
     </main>
 
     <!-- TOAST CONTAINER -->
     <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-    <!-- SETTINGS MODAL (CLIENTS & PROGRAMS) -->
+    <!-- SETTINGS MODAL (CLIENTS, PROGRAMS & BACKUPS) -->
     <div id="settings-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 opacity-0 transition-opacity duration-200">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden transform scale-95 transition-transform duration-200" id="settings-modal-content">
-            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl overflow-hidden transform scale-95 transition-transform duration-200 flex flex-col max-h-[90vh]" id="settings-modal-content">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
                 <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
-                    <i data-lucide="settings" class="w-5 h-5 text-slate-500"></i> Configuración de Listas
+                    <i data-lucide="settings" class="w-5 h-5 text-slate-500"></i> Configuración General
                 </h3>
                 <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-red-500 transition-colors bg-white rounded-full p-1 hover:bg-red-50">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
             
-            <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 h-[400px]">
+            <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-6 overflow-y-auto">
                 <!-- Clients Column -->
-                <div class="flex flex-col h-full">
+                <div class="flex flex-col h-[400px]">
                     <h4 class="text-sm font-bold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
                         <i data-lucide="users" class="w-4 h-4"></i> Clientes
                     </h4>
-                    <!-- Añadir Cliente -->
                     <div class="flex gap-2 mb-3">
                         <input type="text" id="settings-new-client" class="flex-1 border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Nuevo cliente...">
                         <button onclick="addClientFromSettings()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg transition-colors text-sm font-bold flex items-center gap-1 border border-indigo-100">
                             <i data-lucide="plus" class="w-3.5 h-3.5"></i> Añadir
                         </button>
                     </div>
-                    <!-- Lista Clientes -->
-                    <div class="bg-slate-50 border border-slate-200 rounded-lg flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1.5" id="settings-clients-list">
-                        <!-- JS Injected -->
-                    </div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-lg flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1.5" id="settings-clients-list"></div>
                 </div>
 
                 <!-- Program Types Column -->
-                <div class="flex flex-col h-full">
+                <div class="flex flex-col h-[400px]">
                     <h4 class="text-sm font-bold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
                         <i data-lucide="tag" class="w-4 h-4"></i> Tipos de Programa
                     </h4>
-                    <!-- Añadir Programa -->
                     <div class="flex gap-2 mb-3">
                         <input type="text" id="settings-new-program" class="flex-1 border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Nuevo programa...">
                         <button onclick="addProgramTypeFromSettings()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg transition-colors text-sm font-bold flex items-center gap-1 border border-indigo-100">
                             <i data-lucide="plus" class="w-3.5 h-3.5"></i> Añadir
                         </button>
                     </div>
-                    <!-- Lista Programas -->
-                    <div class="bg-slate-50 border border-slate-200 rounded-lg flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1.5" id="settings-programs-list">
-                        <!-- JS Injected -->
+                    <div class="bg-slate-50 border border-slate-200 rounded-lg flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1.5" id="settings-programs-list"></div>
+                </div>
+
+                <!-- Backup & Sync Column -->
+                <div class="flex flex-col h-[400px]">
+                    <h4 class="text-sm font-bold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                        <i data-lucide="hard-drive" class="w-4 h-4"></i> Respaldos y Datos
+                    </h4>
+                    <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 flex flex-col gap-4">
+                        <p class="text-xs text-slate-500 leading-relaxed">
+                            Si no tienes la base de datos configurada, los datos solo se guardarán en este computador. Puedes descargar un respaldo y cargarlo en otro equipo.
+                        </p>
+                        
+                        <button onclick="exportData()" class="w-full bg-slate-800 hover:bg-slate-900 text-white py-2 rounded-lg text-sm font-medium transition-colors flex justify-center items-center gap-2 shadow-sm">
+                            <i data-lucide="download" class="w-4 h-4"></i> Descargar Respaldo (.json)
+                        </button>
+
+                        <div class="h-px bg-slate-200 w-full my-2"></div>
+
+                        <div class="relative">
+                            <input type="file" id="import-file" accept=".json" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="importData(event)">
+                            <div class="w-full bg-white border-2 border-dashed border-slate-300 hover:border-indigo-400 text-slate-600 py-3 rounded-lg text-sm font-medium transition-colors flex justify-center items-center gap-2">
+                                <i data-lucide="upload" class="w-4 h-4"></i> Subir Respaldo
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             
-            <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 text-right">
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 text-right shrink-0">
                 <button onclick="closeSettingsModal()" class="px-5 py-2.5 text-sm font-medium text-white bg-slate-800 hover:bg-slate-900 rounded-lg transition-colors shadow-sm">Cerrar Panel</button>
             </div>
         </div>
@@ -270,7 +298,7 @@
                                 <i data-lucide="chevron-down" class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"></i>
                             </div>
                             <input type="text" id="modal-new-client" class="hidden w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 bg-white focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Nombre...">
-                            <button onclick="toggleNewClient()" class="p-2 bg-slate-100 hover:bg-indigo-100 text-slate-500 hover:text-indigo-600 rounded-lg transition-colors border border-slate-200" title="Nuevo Cliente">
+                            <button onclick="toggleNewClient()" class="p-2 bg-slate-100 hover:bg-indigo-100 text-slate-500 hover:text-indigo-600 rounded-lg transition-colors border border-slate-200" title="Atajo Nuevo Cliente">
                                 <i data-lucide="plus" class="w-4 h-4"></i>
                             </button>
                         </div>
@@ -285,7 +313,7 @@
                         <div class="relative">
                             <select id="modal-area" class="w-full border border-slate-200 rounded-lg pl-3 pr-8 py-2.5 text-sm font-medium text-slate-700 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all appearance-none cursor-pointer">
                                 <option value="Diseño">🎨 Diseño</option>
-                                <option value="AudioVisual">🎥 AudioVisual</option>
+                                <option value="AudioVisual">🎥 Audiovisual</option>
                             </select>
                             <i data-lucide="chevron-down" class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"></i>
                         </div>
@@ -304,19 +332,19 @@
                     <textarea id="modal-detail" rows="2" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-600 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none resize-none transition-all" placeholder="Descripción breve..."></textarea>
                 </div>
 
-                <!-- Row 4: FECHAS (Modificado para robustez) -->
+                <!-- Row 4 -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50/50 p-4 rounded-lg border border-slate-100">
                     <div class="space-y-1.5">
                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wide">Inicio</label>
-                        <input type="date" id="modal-date" onchange="modalDateLogic('start')" class="w-full border border-slate-200 rounded-md px-2 py-1.5 text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none cursor-text">
+                        <input type="date" id="modal-date" onblur="modalDateLogic('start')" onkeydown="if(event.key==='Enter') this.blur()" class="w-full border border-slate-200 rounded-md px-2 py-1.5 text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none cursor-text">
                     </div>
                     <div class="space-y-1.5">
                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wide">Fin</label>
-                        <input type="date" id="modal-end-date" onchange="modalDateLogic('end')" class="w-full border border-slate-200 rounded-md px-2 py-1.5 text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none cursor-text">
+                        <input type="date" id="modal-end-date" onblur="modalDateLogic('end')" onkeydown="if(event.key==='Enter') this.blur()" class="w-full border border-slate-200 rounded-md px-2 py-1.5 text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none cursor-text">
                     </div>
                     <div class="space-y-1.5 relative">
                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wide">Días</label>
-                        <input type="number" id="modal-duration" value="1" min="1" onchange="modalDateLogic('duration')" class="w-full border border-slate-200 rounded-md px-2 py-1.5 text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none text-center font-mono">
+                        <input type="number" id="modal-duration" value="1" min="1" onblur="modalDateLogic('duration')" onkeydown="if(event.key==='Enter') this.blur()" class="w-full border border-slate-200 rounded-md px-2 py-1.5 text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none text-center font-mono">
                     </div>
                     <div class="space-y-1.5">
                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wide">Prioridad</label>
@@ -363,9 +391,48 @@
         </button>
     </div>
 
-    <script>
+    <!-- SCRIPT DE APLICACIÓN -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // =========================================================================
+        // ⚙️ CONFIGURACIÓN DE LA BASE DE DATOS (FIREBASE)
+        // Reemplaza "null" por tu objeto de configuración de Firebase para
+        // activar el guardado en la nube en tu propio servidor web.
+        // =========================================================================
+        const MI_FIREBASE_CONFIG = null; 
+        
+        /* EJEMPLO DE CÓMO SE VE:
+        const MI_FIREBASE_CONFIG = {
+            apiKey: "AIzaSyXXXXXXXXXXXXXXX",
+            authDomain: "tu-proyecto.firebaseapp.com",
+            projectId: "tu-proyecto",
+            storageBucket: "tu-proyecto.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdef"
+        };
+        */
+        // =========================================================================
+
+        let app, auth, db, tasksCollection, settingsDocRef;
+        let currentUser = null;
+
+        try {
+            if (MI_FIREBASE_CONFIG && MI_FIREBASE_CONFIG.projectId !== "mock") {
+                app = initializeApp(MI_FIREBASE_CONFIG);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                tasksCollection = collection(db, 'creative_suite_tasks');
+                settingsDocRef = doc(db, 'creative_suite_settings', 'global');
+            }
+        } catch (e) {
+            console.error("Firebase Initialization Error:", e);
+        }
+
         // --- SECURE HTML ESCAPER ---
-        const escapeHtml = (unsafe) => {
+        window.escapeHtml = (unsafe) => {
             return (unsafe || '').toString().replace(/[&<"'>]/g, function (match) {
                 switch (match) {
                     case '&': return '&amp;';
@@ -378,15 +445,15 @@
         };
 
         // --- TOAST SYSTEM ---
-        function showToast(message, type = 'success') {
+        window.showToast = function(message, type = 'success') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             const colors = type === 'success' ? 'bg-emerald-500' : (type === 'info' ? 'bg-slate-800' : 'bg-red-500');
             const icon = type === 'success' ? 'check-circle' : 'info';
             toast.className = `toast-enter pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg shadow-slate-200 text-white text-sm font-medium ${colors} min-w-[300px]`;
-            toast.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5"></i> ${escapeHtml(message)}`;
+            toast.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5"></i> ${window.escapeHtml(message)}`;
             container.appendChild(toast);
-            lucide.createIcons();
+            if(window.lucide) window.lucide.createIcons();
             setTimeout(() => {
                 toast.style.opacity = '0';
                 toast.style.transform = 'translateY(20px)';
@@ -395,52 +462,33 @@
             }, 3000);
         }
 
-        // --- DATA ---
+        // --- NEW INITIAL DATA BASED ON SCREENSHOTS ---
         const INITIAL_TASKS = [
-            { id: 1, area: 'AudioVisual', client: 'Scheckers', programType: '', program: 'Video-cápsula Enero', detail: 'Entrega segunda semana enero', date: '2026-01-06', duration: 7, priority: 'Alta', completed: false, pinned: false, createdAt: 1 },
-            { id: 2, area: 'Diseño', client: 'Scheckers', programType: '', program: 'Infografía Enero', detail: 'Entrega segunda semana enero', date: '2026-01-06', duration: 4, priority: 'Alta', completed: false, pinned: false, createdAt: 2 },
-            { id: 3, area: 'Diseño', client: 'Metlife', programType: '', program: 'BOOK Imprimible', detail: 'Ajustes de jota (Bordes)', date: '2026-01-20', duration: 5, priority: 'Alta', completed: false, pinned: false, createdAt: 3 },
-            { id: 4, area: 'Diseño', client: 'Metlife', programType: '', program: 'Módulo VENTAS', detail: 'Nuevo Manual', date: '2026-01-26', duration: 7, priority: 'Alta', completed: false, pinned: false, createdAt: 4 },
-            { id: 5, area: 'Diseño', client: 'Ripley', programType: '', program: 'Pendón Onboarding', detail: 'Guía centro formación', date: '2026-01-12', duration: 3, priority: 'Alta', completed: false, pinned: false, createdAt: 5 },
-            { id: 6, area: 'Diseño', client: 'Ripley', programType: '', program: 'Poster Tienda', detail: 'Esquema talleres', date: '2026-01-15', duration: 2, priority: 'Media', completed: false, pinned: false, createdAt: 6 },
-            { id: 7, area: 'Diseño', client: 'Ripley', programType: '', program: 'Infografía Jecyp', detail: 'Guía buenas prácticas', date: '2026-01-15', duration: 2, priority: 'Media', completed: false, pinned: false, createdAt: 7 },
-            { id: 8, area: 'Diseño', client: 'Ripley', programType: '', program: 'Fotos de Equipo', detail: 'Fotos profesionales', date: '2026-01-26', duration: 1, priority: 'Alta', completed: false, pinned: false, createdAt: 8 },
-            { id: 9, area: 'AudioVisual', client: 'Ripley', programType: '', program: 'Video Interactivo', detail: 'Guion uso Rposs', date: '2026-01-31', duration: 5, priority: 'Media', completed: false, pinned: false, createdAt: 9 },
-            { id: 10, area: 'Diseño', client: 'Walmart', programType: 'Onboarding', program: 'Diseños Temáticos', detail: 'Campañas WhatsApp', date: '2026-03-01', duration: 5, priority: 'Baja', completed: false, pinned: false, createdAt: 10 },
-            { id: 11, area: 'Diseño', client: 'Equipo XP', programType: 'Transversal', program: 'Saludo Clientes', detail: 'Días festivos', date: '2026-02-01', duration: 3, priority: 'Baja', completed: false, pinned: false, createdAt: 11 },
-            { id: 12, area: 'Diseño', client: 'Walmart', programType: 'Apertura', program: 'Testimonios Apertura', detail: 'Videos 2026', date: '2026-05-01', duration: 10, priority: 'Baja', completed: false, pinned: false, createdAt: 12 },
-            { id: 13, area: 'Diseño', client: 'Walmart', programType: 'Apertura', program: 'Presentaciones', detail: 'Actualización diseño', date: '2026-01-31', duration: 5, priority: 'Baja', completed: false, pinned: false, createdAt: 13 },
-            { id: 14, area: 'AudioVisual', client: 'Walmart', programType: 'Onboarding', program: 'Testimonio OB', detail: 'Experiencia', date: '2026-06-01', duration: 7, priority: 'Baja', completed: false, pinned: false, createdAt: 14 },
-            { id: 15, area: 'AudioVisual', client: 'Walmart', programType: 'Onboarding', program: 'Video Bienvenida', detail: 'Visualización programa', date: '2026-11-01', duration: 7, priority: 'Baja', completed: false, pinned: false, createdAt: 15 },
-            { id: 16, area: 'AudioVisual', client: 'Parque R.', programType: '', program: 'Video Impacto', detail: 'Semestral', date: '2026-07-01', duration: 10, priority: 'Baja', completed: false, pinned: false, createdAt: 16 },
-            { id: 17, area: 'AudioVisual', client: 'Metlife', programType: '', program: 'Video Impacto', detail: 'Cierre con testimonios', date: '2026-11-01', duration: 7, priority: 'Baja', completed: false, pinned: false, createdAt: 17 },
-            { id: 18, area: 'Diseño', client: 'Ripley', programType: '', program: 'GIFs Fechas', detail: 'Navidad, Fiestas Patrias', date: '2026-03-02', duration: 10, priority: 'Baja', completed: false, pinned: false, createdAt: 18 },
-            { id: 19, area: 'AudioVisual', client: 'Ripley', programType: '', program: 'Cierre Trimestre', detail: 'Video indicadores', date: '2026-04-03', duration: 5, priority: 'Baja', completed: false, pinned: false, createdAt: 19 },
-            { id: 20, area: 'AudioVisual', client: 'Ripley', programType: '', program: 'Impacto Semestral', detail: 'Motivacional', date: '2026-05-29', duration: 5, priority: 'Baja', completed: false, pinned: false, createdAt: 20 },
-            { id: 21, area: 'Diseño', client: 'Ripley', programType: '', program: 'Galardón Fin Año', detail: 'Reconocimiento tiendas', date: '2026-11-08', duration: 5, priority: 'Baja', completed: false, pinned: false, createdAt: 21 },
-            { id: 22, area: 'AudioVisual', client: 'Ripley', programType: '', program: 'Video Cierre Año', detail: 'Recopilación premios', date: '2026-12-04', duration: 7, priority: 'Baja', completed: false, pinned: false, createdAt: 22 },
-            { id: 23, area: 'AudioVisual', client: 'Scheckers', programType: '', program: 'Cápsula Febrero', detail: 'Entrega feb', date: '2026-02-03', duration: 5, priority: 'Media', completed: false, pinned: false, createdAt: 23 },
-            { id: 24, area: 'Diseño', client: 'Scheckers', programType: '', program: 'Infografía Febrero', detail: 'Entrega feb', date: '2026-02-03', duration: 3, priority: 'Media', completed: false, pinned: false, createdAt: 24 },
-            { id: 25, area: 'Diseño', client: 'Walmart', programType: 'Onboarding', program: 'Infografías OB', detail: 'Nuevo formato', date: '2026-01-26', duration: 5, priority: 'Media', completed: false, pinned: false, createdAt: 25 },
-            { id: 26, area: 'Diseño', client: 'Walmart', programType: 'Onboarding', program: 'QR Tiendas', detail: 'Imágenes QR', date: '2026-01-26', duration: 2, priority: 'Media', completed: false, pinned: false, createdAt: 26 },
-            { id: 27, area: 'Diseño', client: 'Equipo XP', programType: 'Transversal', program: 'XP News', detail: 'Nuevo template', date: '2026-03-01', duration: 3, priority: 'Media', completed: false, pinned: false, createdAt: 27 },
-            { id: 28, area: 'Diseño', client: 'Walmart', programType: 'Apertura', program: 'Estructura Procesos', detail: 'Revisión flujograma', date: '2026-01-31', duration: 3, priority: 'Media', completed: false, pinned: false, createdAt: 28 },
-            { id: 29, area: 'Diseño', client: 'Walmart', programType: 'Apertura', program: 'Videos Testimonios', detail: 'Diseño gráfica 2025', date: '2026-02-01', duration: 4, priority: 'Media', completed: false, pinned: false, createdAt: 29 },
-            { id: 30, area: 'Diseño', client: 'Walmart', programType: 'Apertura', program: 'Videos APT', detail: 'Testimonios e hitos', date: '2026-02-01', duration: 4, priority: 'Media', completed: false, pinned: false, createdAt: 30 },
-            { id: 31, area: 'Diseño', client: 'Equipo XP', programType: 'Transversal', program: 'Taller DEI', detail: 'Diseño presentación Diversidad e Inclusión', date: '2026-03-02', duration: 5, priority: 'Media', completed: false, pinned: false, createdAt: 31 },
-            { id: 32, area: 'Diseño', client: 'Equipo XP', programType: 'Transversal', program: 'Infografía DJ', detail: 'Instructivo DJ Elearning', date: '2026-02-15', duration: 3, priority: 'Media', completed: false, pinned: false, createdAt: 32 },
-            { id: 33, area: 'AudioVisual', client: 'Equipo XP', programType: 'Transversal', program: 'Video DJ', detail: 'Video corto instructivo DJ', date: '2026-02-15', duration: 4, priority: 'Media', completed: false, pinned: false, createdAt: 33 },
-            { id: 34, area: 'Diseño', client: 'Equipo XP', programType: 'Transversal', program: 'Template Cowork', detail: 'Renovar nueva cara del año', date: '2026-02-15', duration: 3, priority: 'Baja', completed: false, pinned: false, createdAt: 34 },
-            { id: 35, area: 'AudioVisual', client: 'Equipo XP', programType: 'Transversal', program: 'Web / Redes', detail: 'Renovar videos equipo y web', date: '2026-06-01', duration: 10, priority: 'Baja', completed: false, pinned: false, createdAt: 35 },
-            { id: 36, area: 'AudioVisual', client: 'Ripley', programType: '', program: 'Impacto Anual', detail: 'Video cierre programa, material recopilatorio', date: '2026-11-01', duration: 7, priority: 'Baja', completed: false, pinned: false, createdAt: 36 }
+            { id: "t1", area: "Diseño", client: "EQUIPO XP", programType: "Transversal", program: "Template Presentación XP 2026", detail: "Hacer presentación Template", date: "2026-03-05", duration: 2, priority: "Alta", completed: false, pinned: false, createdAt: 1 },
+            { id: "t2", area: "Diseño", client: "EQUIPO XP", programType: "Transversal", program: "Infografía Cierre de Mes", detail: "Participantes Adherencia Completitud Satisfacción Horas de entrenamiento Espacio para un par Testimonios Comentarios de XP", date: "2026-03-05", duration: 2, priority: "Alta", completed: false, pinned: false, createdAt: 2 },
+            { id: "t3", area: "Diseño", client: "WALMART", programType: "Bienvenida", program: "Infografías OB", detail: "Actualizarlas al nuevo formato", date: "2026-03-05", duration: 2, priority: "Media", completed: false, pinned: false, createdAt: 3 },
+            { id: "t4", area: "Diseño", client: "WALMART", programType: "Bienvenida", program: "QR Tiendas", detail: "Imágen afiche qr: No olvides hacer tu declaracion jurada", date: "2026-03-05", duration: 2, priority: "Media", completed: false, pinned: false, createdAt: 4 },
+            { id: "t5", area: "Diseño", client: "EQUIPO XP", programType: "Transversal", program: "Taller DEI", detail: "Diseño presentación Diversidad e Inclusión", date: "2026-03-05", duration: 5, priority: "Alta", completed: false, pinned: false, createdAt: 5 },
+            { id: "t6", area: "Diseño", client: "RIPLEY", programType: "Onboarding", program: "Pendón Onboarding", detail: "Pendón General Onboarding 2026 para uso en momentos especiales.", date: "2026-03-09", duration: 12, priority: "Media", completed: false, pinned: false, createdAt: 6 },
+            { id: "t7", area: "AudioVisual", client: "RIPLEY", programType: "Onboarding", program: "Video Inicio Onboarding", detail: "Video para mostrar el pie inicial de Onboarding", date: "2026-03-09", duration: 4, priority: "Alta", completed: false, pinned: false, createdAt: 7 },
+            { id: "t8", area: "AudioVisual", client: "RIPLEY", programType: "Cristi", program: "Video Talleres Jefes", detail: "Avance en al menos 2-3 Videos de los talleres", date: "2026-03-09", duration: 12, priority: "Alta", completed: false, pinned: false, createdAt: 8 },
+            { id: "t9", area: "Diseño", client: "EQUIPO XP", programType: "Transversal", program: "Infografía DJ", detail: "Instructivo DJ E-Learning 2026", date: "2026-03-12", duration: 2, priority: "Media", completed: false, pinned: false, createdAt: 9 },
+            { id: "t10", area: "Diseño", client: "RIPLEY", programType: "Onboarding", program: "Fotos de Equipo", detail: "Fotos del Equipo 2026", date: "2026-03-20", duration: 3, priority: "Baja", completed: false, pinned: false, createdAt: 10 },
+            { id: "t11", area: "AudioVisual", client: "RIPLEY", programType: "", program: "Video Interactivo RPOS", detail: "Guion uso RPOS interactivo", date: "2026-03-23", duration: 5, priority: "Media", completed: false, pinned: false, createdAt: 11 },
+            { id: "t12", area: "Diseño", client: "EQUIPO XP", programType: "Transversal", program: "XP News", detail: "Nuevo Formato Digital", date: "2026-03-30", duration: 2, priority: "Media", completed: false, pinned: false, createdAt: 12 },
+            { id: "t13", area: "AudioVisual", client: "EQUIPO XP", programType: "Transversal", program: "Video DJ", detail: "Video corto instructivo DJ E-Learning", date: "2026-03-30", duration: 5, priority: "Media", completed: false, pinned: false, createdAt: 13 },
+            { id: "t14", area: "Diseño", client: "WALMART", programType: "Apertura", program: "Estructura Procesos", detail: "Revisión flujograma", date: "2026-04-04", duration: 1, priority: "Baja", completed: false, pinned: false, createdAt: 14 },
+            { id: "t15", area: "Diseño", client: "RIPLEY", programType: "", program: "XP 2027", detail: "Línea Gráfica XP 2027", date: "2026-05-01", duration: 183, priority: "Baja", completed: false, pinned: false, createdAt: 15 },
+            { id: "t16", area: "AudioVisual", client: "RIPLEY", programType: "", program: "Video: Impacto Semestral", detail: "Video Motivacional Cierre", date: "2026-05-29", duration: 5, priority: "Baja", completed: false, pinned: false, createdAt: 16 },
+            { id: "t17", area: "AudioVisual", client: "EQUIPO XP", programType: "Transversal", program: "Web / Redes", detail: "Renovar videos equipo y web", date: "2026-06-01", duration: 10, priority: "Baja", completed: false, pinned: false, createdAt: 17 },
+            { id: "t18", area: "AudioVisual", client: "METLIFE", programType: "", program: "Video Impacto", detail: "Cierre con testimonios", date: "2026-11-01", duration: 7, priority: "Baja", completed: false, pinned: false, createdAt: 18 },
+            { id: "t19", area: "AudioVisual", client: "RIPLEY", programType: "", program: "Impacto Anual", detail: "Video cierre programa", date: "2026-11-01", duration: 7, priority: "Baja", completed: false, pinned: false, createdAt: 19 },
+            { id: "t20", area: "Diseño", client: "RIPLEY", programType: "", program: "Galardón Fin Año", detail: "Reconocimiento tiendas", date: "2026-11-08", duration: 5, priority: "Baja", completed: false, pinned: false, createdAt: 20 },
+            { id: "t21", area: "AudioVisual", client: "RIPLEY", programType: "", program: "Video Cierre Año", detail: "Recopilación premios", date: "2026-12-04", duration: 7, priority: "Baja", completed: false, pinned: false, createdAt: 21 }
         ];
 
-        let tasks = JSON.parse(localStorage.getItem('creativeTasks_2026_v17')) || INITIAL_TASKS;
-        if(tasks.length < 5) tasks = INITIAL_TASKS;
-
-        // Init Settings (Clients / Programs)
-        let savedClients = JSON.parse(localStorage.getItem('creativeClients_2026'));
-        let savedPrograms = JSON.parse(localStorage.getItem('creativePrograms_2026'));
+        let tasks = [];
+        let isInitialized = false;
 
         let state = {
             view: 'grid',
@@ -450,22 +498,190 @@
             searchTerm: '',
             sortBy: 'date',
             zoomLevel: 3,
-            calendarDate: new Date(2026, 0, 1),
+            calendarDate: new Date(2026, 2, 1), // March 2026
             activeMenuTaskId: null,
-            clients: savedClients || ["Ripley", "Walmart", "Metlife", "Scheckers", "Parque R.", "Equipo XP", "General"],
-            programTypes: savedPrograms || ["Onboarding", "Apertura", "Transversal", "Cierre", "Otro"]
+            clients: ["RIPLEY", "WALMART", "METLIFE", "EQUIPO XP"],
+            programTypes: ["Transversal", "Bienvenida", "Onboarding", "Cristi", "Apertura"]
         };
 
-        const saveTasks = () => localStorage.setItem('creativeTasks_2026_v17', JSON.stringify(tasks));
-        const saveSettings = () => {
+        // Offline storage loaders
+        const loadLocalTasks = () => JSON.parse(localStorage.getItem('creativeTasks_2026_v19')) || INITIAL_TASKS;
+        const loadLocalClients = () => JSON.parse(localStorage.getItem('creativeClients_2026')) || ["RIPLEY", "WALMART", "METLIFE", "EQUIPO XP"];
+        const loadLocalPrograms = () => JSON.parse(localStorage.getItem('creativePrograms_2026')) || ["Transversal", "Bienvenida", "Onboarding", "Cristi", "Apertura"];
+
+        // --- FIREBASE SYNC FUNCTIONS ---
+        async function pushSettings() {
+            // Siempre guardar localmente para modo offline-first
             localStorage.setItem('creativeClients_2026', JSON.stringify(state.clients));
             localStorage.setItem('creativePrograms_2026', JSON.stringify(state.programTypes));
-        };
+            
+            if(!db || !currentUser) return;
+            try {
+                await setDoc(settingsDocRef, { clients: state.clients, programTypes: state.programTypes });
+            } catch (e) { console.error("Error syncing settings to cloud", e); }
+        }
+
+        window.pushTask = async function(taskData) {
+            // Siempre guardar localmente para modo offline-first y actualizar UI inmediato
+            const index = tasks.findIndex(t => t.id === taskData.id);
+            if (index > -1) tasks[index] = taskData;
+            else tasks.push(taskData);
+            
+            localStorage.setItem('creativeTasks_2026_v19', JSON.stringify(tasks));
+            window.renderApp();
+
+            if(!db || !currentUser) return;
+            try {
+                await setDoc(doc(tasksCollection, taskData.id.toString()), taskData);
+            } catch (e) { console.error("Error syncing task to cloud", e); }
+        }
+
+        window.removeTask = async function(taskId) {
+            // Siempre eliminar localmente para modo offline-first y actualizar UI
+            tasks = tasks.filter(t => t.id !== taskId);
+            localStorage.setItem('creativeTasks_2026_v19', JSON.stringify(tasks));
+            window.renderApp();
+
+            if(!db || !currentUser) return;
+            try {
+                await deleteDoc(doc(tasksCollection, taskId.toString()));
+            } catch (e) { console.error("Error deleting task from cloud", e); }
+        }
+
+        // --- BACKUP FUNCTIONS ---
+        window.exportData = function() {
+            const dataStr = JSON.stringify({ tasks, clients: state.clients, programTypes: state.programTypes });
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            const exportFileDefaultName = 'creative_suite_backup.json';
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+        }
+
+        window.importData = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (imported.tasks) tasks = imported.tasks;
+                    if (imported.clients) state.clients = imported.clients;
+                    if (imported.programTypes) state.programTypes = imported.programTypes;
+                    
+                    localStorage.setItem('creativeTasks_2026_v19', JSON.stringify(tasks));
+                    pushSettings();
+                    
+                    // Push to firebase if connected
+                    if(db && currentUser) {
+                        tasks.forEach(t => pushTask(t));
+                    }
+                    
+                    window.closeSettingsModal();
+                    window.renderApp();
+                    window.showToast("Datos restaurados correctamente");
+                } catch (err) {
+                    alert("Error al importar el archivo JSON");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // --- INITIALIZATION ---
+        async function initApp() {
+            // Cargar datos locales primero para mostrar algo de inmediato
+            tasks = loadLocalTasks();
+            state.clients = loadLocalClients();
+            state.programTypes = loadLocalPrograms();
+            
+            // Forzar renderizado inicial
+            window.renderApp();
+
+            if(!auth || !db) {
+                document.getElementById('cloud-indicator').classList.replace('bg-emerald-400', 'bg-slate-400');
+                document.getElementById('cloud-indicator').title = "Modo Local (Firebase no configurado)";
+                return;
+            }
+
+            try {
+                await signInAnonymously(auth);
+                currentUser = auth.currentUser;
+                
+                onAuthStateChanged(auth, (user) => {
+                    currentUser = user;
+                    if(user) startListeners();
+                });
+                
+            } catch(e) {
+                console.error("Error de Auth: ", e);
+                window.showToast("Error de permisos: Activa 'Anónimo' en Auth de Firebase", "red");
+                document.getElementById('cloud-indicator').classList.replace('bg-emerald-400', 'bg-red-400');
+                document.getElementById('cloud-indicator').title = "Error conectando a la Nube (Revisa Auth Anónimo)";
+            }
+        }
+
+        function startListeners() {
+            if (!currentUser) return;
+
+            // Listen to settings
+            onSnapshot(settingsDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    state.clients = docSnap.data().clients || state.clients;
+                    state.programTypes = docSnap.data().programTypes || state.programTypes;
+                    localStorage.setItem('creativeClients_2026', JSON.stringify(state.clients));
+                    localStorage.setItem('creativePrograms_2026', JSON.stringify(state.programTypes));
+                    renderFilters();
+                }
+            }, (err) => console.error("Sync error settings:", err));
+
+            // Listen to tasks
+            onSnapshot(tasksCollection, (snapshot) => {
+                const cloudIndicator = document.getElementById('cloud-indicator');
+                if(cloudIndicator) {
+                    cloudIndicator.classList.add('syncing');
+                    cloudIndicator.classList.replace('bg-red-400', 'bg-emerald-400');
+                    cloudIndicator.classList.replace('bg-slate-400', 'bg-emerald-400');
+                    cloudIndicator.title = "Conectado a la Nube (En Vivo)";
+                }
+                
+                if (snapshot.empty && !isInitialized) {
+                    // Push local tasks to cloud if cloud is empty
+                    tasks.forEach(t => window.pushTask(t));
+                } else if (!snapshot.empty) {
+                    tasks = [];
+                    snapshot.forEach((docSnap) => {
+                        tasks.push(docSnap.data());
+                    });
+                    localStorage.setItem('creativeTasks_2026_v19', JSON.stringify(tasks));
+                    window.renderApp();
+                }
+                
+                isInitialized = true;
+                setTimeout(() => {
+                    if(cloudIndicator) cloudIndicator.classList.remove('syncing');
+                }, 1500);
+
+            }, (err) => {
+                console.error("Firebase sync error:", err);
+                if (err.code === 'permission-denied') {
+                    window.showToast("Error de permisos: Revisa las reglas de Firestore", "red");
+                }
+                const cloudIndicator = document.getElementById('cloud-indicator');
+                if(cloudIndicator) {
+                    cloudIndicator.classList.remove('syncing');
+                    cloudIndicator.classList.replace('bg-emerald-400', 'bg-red-400');
+                    cloudIndicator.title = "Modo Local (Error de permisos en Base de Datos)";
+                }
+            });
+        }
 
         // --- HELPERS PARA FECHAS ---
-        const formatDateString = (date) => date.toISOString().split('T')[0];
+        const formatDateString = (date) => {
+            if(isNaN(date)) return '';
+            return date.toISOString().split('T')[0];
+        };
 
-        // 1 día = Fin es el mismo día que Inicio
         const getEndDate = (startStr, duration) => {
             if (!startStr) return '';
             const date = new Date(startStr + 'T12:00:00');
@@ -473,7 +689,6 @@
             return formatDateString(date);
         };
 
-        // Misma fecha = 1 día
         const getDaysDiff = (startStr, endStr) => {
             const d1 = new Date(startStr + 'T12:00:00');
             const d2 = new Date(endStr + 'T12:00:00');
@@ -543,7 +758,7 @@
             if (clientFilter) {
                 const currentVal = state.filterClient;
                 clientFilter.innerHTML = `<option value="Todas">Todos los Clientes</option>` + 
-                    state.clients.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+                    state.clients.map(c => `<option value="${window.escapeHtml(c)}">${window.escapeHtml(c)}</option>`).join('');
                 clientFilter.value = currentVal;
             }
             
@@ -552,7 +767,7 @@
             document.getElementById('sort-by').value = state.sortBy;
         }
 
-        function renderApp() {
+        window.renderApp = function() {
             renderFilters();
             renderHeader();
             const container = document.getElementById('app-container');
@@ -573,7 +788,7 @@
                 else if (state.view === 'gantt') renderGantt(container, filtered);
                 else if (state.view === 'completed') renderCompleted(container, filtered);
             }
-            lucide.createIcons();
+            if(window.lucide) window.lucide.createIcons();
             updateViewButtons();
         }
 
@@ -583,8 +798,10 @@
                 btn.classList.add('text-slate-500', 'hover:bg-slate-200');
             });
             const activeBtn = document.getElementById(`btn-${state.view}`);
-            activeBtn.classList.remove('text-slate-500', 'hover:bg-slate-200');
-            activeBtn.classList.add('bg-white', 'shadow-sm', 'text-indigo-600');
+            if(activeBtn) {
+                activeBtn.classList.remove('text-slate-500', 'hover:bg-slate-200');
+                activeBtn.classList.add('bg-white', 'shadow-sm', 'text-indigo-600');
+            }
         }
 
         function renderHeader() {
@@ -611,31 +828,31 @@
             tasks.forEach(task => {
                 const card = document.createElement('div');
                 card.className = `group bg-white rounded-xl shadow-sm border hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden relative min-h-[200px] cursor-pointer ${task.pinned ? 'border-amber-300 ring-2 ring-amber-100 ring-offset-2' : 'border-slate-200 hover:border-indigo-100'}`;
-                card.onclick = (e) => { if(!e.target.closest('button')) openTaskModal(task.id); };
+                card.onclick = (e) => { if(!e.target.closest('button')) window.openTaskModal(task.id); };
                 
                 card.innerHTML = `
                     <div class="h-1.5 w-full ${getClientColor(task.client)}"></div>
                     <div class="p-5 flex-1 flex flex-col">
                         <div class="flex justify-between items-start mb-3">
                              <div class="flex items-center gap-2">
-                                <button onclick="togglePin(event, ${task.id})" class="transition-transform hover:scale-110 ${task.pinned ? 'text-amber-500' : 'text-slate-300 hover:text-slate-500'}" title="${task.pinned ? 'Desfijar tarea' : 'Fijar tarea'}">
+                                <button onclick="togglePin(event, '${task.id}')" class="transition-transform hover:scale-110 ${task.pinned ? 'text-amber-500' : 'text-slate-300 hover:text-slate-500'}" title="${task.pinned ? 'Desfijar tarea' : 'Fijar tarea'}">
                                     <i data-lucide="pin" class="w-4 h-4" ${task.pinned ? 'fill="currentColor"' : ''}></i>
                                 </button>
                                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${getPriorityColor(task.priority)}">${task.priority}</span>
                                 ${task.completed ? '<i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500"></i>' : ''}
                              </div>
                              <div class="flex items-center gap-2">
-                                <button onclick="toggleComplete(${task.id})" class="text-slate-200 hover:text-emerald-500 hover:scale-110 transition-transform" title="Marcar como completada"><i data-lucide="check-circle-2" class="w-4 h-4"></i></button>
+                                <button onclick="toggleComplete('${task.id}')" class="text-slate-200 hover:text-emerald-500 hover:scale-110 transition-transform" title="Marcar como completada"><i data-lucide="check-circle-2" class="w-4 h-4"></i></button>
                                 <span class="text-[10px] font-medium text-slate-400 uppercase tracking-wide">${task.area}</span>
                              </div>
                         </div>
                         <div class="flex-1">
                             <div class="flex items-center gap-1.5 mb-1 flex-wrap">
-                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">${escapeHtml(task.client)}</span>
-                                ${task.programType ? `<span class="text-[9px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 border border-slate-200">${escapeHtml(task.programType)}</span>` : ''}
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">${window.escapeHtml(task.client)}</span>
+                                ${task.programType ? `<span class="text-[9px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 border border-slate-200">${window.escapeHtml(task.programType)}</span>` : ''}
                             </div>
-                            <h2 class="text-base font-bold text-slate-800 leading-snug mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2">${escapeHtml(task.program)}</h2>
-                            <p class="text-xs text-slate-500 leading-relaxed line-clamp-3">${escapeHtml(task.detail) || ''}</p>
+                            <h2 class="text-base font-bold text-slate-800 leading-snug mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2">${window.escapeHtml(task.program)}</h2>
+                            <p class="text-xs text-slate-500 leading-relaxed line-clamp-3">${window.escapeHtml(task.detail) || ''}</p>
                         </div>
                         <div class="flex items-center justify-between text-xs text-slate-400 mt-4 pt-4 border-t border-slate-50">
                             <div class="flex items-center gap-1.5">
@@ -656,27 +873,27 @@
             tasks.forEach(task => {
                 const item = document.createElement('div');
                 item.className = `group bg-white rounded-xl shadow-sm border transition-all flex flex-row items-center h-20 overflow-hidden shrink-0 cursor-pointer ${task.pinned ? 'border-amber-300 bg-amber-50/10' : 'border-slate-200 hover:shadow-md hover:border-indigo-200'}`;
-                item.onclick = (e) => { if(!e.target.closest('button') && !e.target.closest('input')) openTaskModal(task.id); };
+                item.onclick = (e) => { if(!e.target.closest('button') && !e.target.closest('input')) window.openTaskModal(task.id); };
                 item.innerHTML = `
                     <div class="w-1.5 h-full ${getClientColor(task.client)}"></div>
                     <div class="p-4 flex-1 flex flex-row items-center justify-between gap-6">
                         <div class="w-8 flex justify-center">
-                             <button onclick="toggleComplete(${task.id})" class="text-slate-300 hover:text-emerald-500 hover:scale-110 transition-all" title="Completar tarea">
+                             <button onclick="toggleComplete('${task.id}')" class="text-slate-300 hover:text-emerald-500 hover:scale-110 transition-all" title="Completar tarea">
                                 <i data-lucide="check-circle-2" class="w-5 h-5"></i>
                              </button>
                         </div>
                         <div class="w-6 flex justify-center">
-                             <button onclick="togglePin(event, ${task.id})" class="transition-transform hover:scale-110 ${task.pinned ? 'text-amber-500' : 'text-slate-300 hover:text-amber-500'}" title="${task.pinned ? 'Desfijar tarea' : 'Fijar tarea'}">
+                             <button onclick="togglePin(event, '${task.id}')" class="transition-transform hover:scale-110 ${task.pinned ? 'text-amber-500' : 'text-slate-300 hover:text-amber-500'}" title="${task.pinned ? 'Desfijar tarea' : 'Fijar tarea'}">
                                 <i data-lucide="pin" class="w-4 h-4" ${task.pinned ? 'fill="currentColor"' : ''}></i>
                              </button>
                         </div>
                         <div class="min-w-[80px]"><span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${getPriorityColor(task.priority)}">${task.priority}</span></div>
                         <div class="flex-1 min-w-[200px]">
                             <div class="flex items-center gap-2 mb-0.5">
-                                <h3 class="text-[10px] font-bold uppercase text-slate-400">${escapeHtml(task.client)}</h3>
-                                ${task.programType ? `<span class="text-[9px] bg-slate-100 px-1.5 rounded text-slate-500 border">${escapeHtml(task.programType)}</span>` : ''}
+                                <h3 class="text-[10px] font-bold uppercase text-slate-400">${window.escapeHtml(task.client)}</h3>
+                                ${task.programType ? `<span class="text-[9px] bg-slate-100 px-1.5 rounded text-slate-500 border">${window.escapeHtml(task.programType)}</span>` : ''}
                             </div>
-                            <input type="text" value="${escapeHtml(task.program)}" onblur="updateInlineField(${task.id}, 'program', this.value)" onkeydown="if(event.key==='Enter') this.blur()"
+                            <input type="text" value="${window.escapeHtml(task.program)}" onblur="updateInlineField('${task.id}', 'program', this.value)" onkeydown="if(event.key==='Enter') this.blur()"
                                 class="w-full text-sm font-bold text-slate-800 bg-transparent input-ghost rounded px-1 -ml-1 ${task.completed ? 'line-through text-slate-400' : ''}">
                         </div>
                         <div class="hidden md:flex flex-1 items-center gap-2">
@@ -690,7 +907,7 @@
                             </div>
                         </div>
                         <div class="w-8 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                             <button onclick="openContextMenu(event, ${task.id})" class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
+                             <button onclick="openContextMenu(event, '${task.id}')" class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
                                 <i data-lucide="more-horizontal" class="w-4 h-4"></i>
                             </button>
                         </div>
@@ -719,27 +936,27 @@
             tasks.forEach(task => {
                 const item = document.createElement('div');
                 item.className = `group bg-white rounded-xl shadow-sm border border-slate-200 transition-all flex flex-row items-center h-20 overflow-hidden shrink-0 cursor-pointer opacity-80 hover:opacity-100 ${task.pinned ? 'border-amber-300' : ''}`;
-                item.onclick = (e) => { if(!e.target.closest('button')) openTaskModal(task.id); };
+                item.onclick = (e) => { if(!e.target.closest('button')) window.openTaskModal(task.id); };
                 item.innerHTML = `
                     <div class="w-1.5 h-full ${getClientColor(task.client)} grayscale"></div>
                     <div class="p-4 flex-1 flex flex-row items-center justify-between gap-6">
                         <div class="w-8 flex justify-center">
-                             <button onclick="toggleComplete(${task.id})" class="text-emerald-500 hover:text-slate-400 hover:scale-110 transition-all" title="Recuperar a pendientes">
+                             <button onclick="toggleComplete('${task.id}')" class="text-emerald-500 hover:text-slate-400 hover:scale-110 transition-all" title="Recuperar a pendientes">
                                 <i data-lucide="check-circle-2" class="w-5 h-5" fill="#10b981" stroke="white"></i>
                              </button>
                         </div>
                         <div class="w-6 flex justify-center">
-                             <button onclick="togglePin(event, ${task.id})" class="transition-transform hover:scale-110 ${task.pinned ? 'text-amber-500' : 'text-slate-300'}" title="${task.pinned ? 'Desfijar tarea' : 'Fijar tarea'}">
+                             <button onclick="togglePin(event, '${task.id}')" class="transition-transform hover:scale-110 ${task.pinned ? 'text-amber-500' : 'text-slate-300'}" title="${task.pinned ? 'Desfijar tarea' : 'Fijar tarea'}">
                                 <i data-lucide="pin" class="w-4 h-4" ${task.pinned ? 'fill="currentColor"' : ''}></i>
                              </button>
                         </div>
                         <div class="min-w-[80px]"><span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${getPriorityColor(task.priority)} grayscale opacity-70">${task.priority}</span></div>
                         <div class="flex-1 min-w-[200px]">
                             <div class="flex items-center gap-2 mb-0.5 opacity-70">
-                                <h3 class="text-[10px] font-bold uppercase text-slate-400">${escapeHtml(task.client)}</h3>
-                                ${task.programType ? `<span class="text-[9px] bg-slate-100 px-1.5 rounded text-slate-500 border">${escapeHtml(task.programType)}</span>` : ''}
+                                <h3 class="text-[10px] font-bold uppercase text-slate-400">${window.escapeHtml(task.client)}</h3>
+                                ${task.programType ? `<span class="text-[9px] bg-slate-100 px-1.5 rounded text-slate-500 border">${window.escapeHtml(task.programType)}</span>` : ''}
                             </div>
-                            <div class="text-sm font-bold text-slate-400 line-through">${escapeHtml(task.program)}</div>
+                            <div class="text-sm font-bold text-slate-400 line-through">${window.escapeHtml(task.program)}</div>
                         </div>
                         <div class="hidden md:flex flex-1 items-center gap-2 opacity-70">
                              <span class="flex items-center w-fit text-[11px] font-medium text-slate-500 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100">
@@ -793,9 +1010,9 @@
                     tasks.filter(t => t.date === dateStr).forEach(t => {
                         const bg = getClientColor(t.client);
                         cell.innerHTML += `
-                            <div onclick="openTaskModal(${t.id})" class="group flex items-center gap-1 text-[10px] px-2 py-1 rounded-md shadow-sm text-white ${bg} cursor-pointer hover:brightness-110 truncate font-medium ${t.pinned ? 'ring-1 ring-white/50 border-l-2 border-amber-300' : ''}" title="${escapeHtml(t.program)}">
+                            <div onclick="openTaskModal('${t.id}')" class="group flex items-center gap-1 text-[10px] px-2 py-1 rounded-md shadow-sm text-white ${bg} cursor-pointer hover:brightness-110 truncate font-medium ${t.pinned ? 'ring-1 ring-white/50 border-l-2 border-amber-300' : ''}" title="${window.escapeHtml(t.program)}">
                                 ${t.pinned ? '<i data-lucide="pin" class="w-2.5 h-2.5 text-amber-200 shrink-0" fill="currentColor"></i>' : ''}
-                                <span class="truncate">${escapeHtml(t.program)}</span>
+                                <span class="truncate">${window.escapeHtml(t.program)}</span>
                             </div>`;
                     });
                     if(isToday) cell.classList.add('bg-indigo-50/30');
@@ -830,25 +1047,25 @@
                 const endDate = getEndDate(task.date, task.duration);
                 const row = document.createElement('div');
                 row.className = `grid grid-cols-[40px_40px_140px_1fr_110px_70px_110px_40px] border-b border-slate-100 hover:bg-slate-50 transition-colors items-center h-[44px] cursor-pointer ${task.pinned ? 'bg-amber-50/10' : ''}`;
-                row.onclick = (e) => { if(!e.target.closest('button') && !e.target.closest('input')) openTaskModal(task.id); };
+                row.onclick = (e) => { if(!e.target.closest('button') && !e.target.closest('input')) window.openTaskModal(task.id); };
                 
                 row.innerHTML = `
-                    <div class="border-r h-full flex items-center justify-center"><button onclick="toggleComplete(${task.id})" class="text-slate-300 hover:text-emerald-500"><i data-lucide="check-circle-2" class="w-4 h-4"></i></button></div>
-                    <div class="border-r h-full flex items-center justify-center"><button onclick="togglePin(event, ${task.id})" class="transition-transform hover:scale-110 ${task.pinned ? 'text-amber-500' : 'text-slate-300 hover:text-amber-500'}"><i data-lucide="pin" class="w-4 h-4" ${task.pinned ? 'fill="currentColor"' : ''}></i></button></div>
-                    <div class="border-r h-full px-2 py-1 flex items-center"><div class="w-full h-7 px-2 rounded-md flex items-center justify-center text-[10px] font-bold truncate ${getClientBadge(task.client)}">${escapeHtml(task.client)}</div></div>
+                    <div class="border-r h-full flex items-center justify-center"><button onclick="toggleComplete('${task.id}')" class="text-slate-300 hover:text-emerald-500"><i data-lucide="check-circle-2" class="w-4 h-4"></i></button></div>
+                    <div class="border-r h-full flex items-center justify-center"><button onclick="togglePin(event, '${task.id}')" class="transition-transform hover:scale-110 ${task.pinned ? 'text-amber-500' : 'text-slate-300 hover:text-amber-500'}"><i data-lucide="pin" class="w-4 h-4" ${task.pinned ? 'fill="currentColor"' : ''}></i></button></div>
+                    <div class="border-r h-full px-2 py-1 flex items-center"><div class="w-full h-7 px-2 rounded-md flex items-center justify-center text-[10px] font-bold truncate ${getClientBadge(task.client)}">${window.escapeHtml(task.client)}</div></div>
                     <div class="border-r h-full px-3 py-1 flex items-center">
-                        <input type="text" value="${escapeHtml(task.program)}" onblur="updateInlineField(${task.id}, 'program', this.value)" onkeydown="if(event.key==='Enter') this.blur()" class="w-full text-xs font-semibold text-slate-700 bg-transparent input-ghost rounded py-1 px-2 cursor-text">
+                        <input type="text" value="${window.escapeHtml(task.program)}" onblur="updateInlineField('${task.id}', 'program', this.value)" onkeydown="if(event.key==='Enter') this.blur()" class="w-full text-xs font-semibold text-slate-700 bg-transparent input-ghost rounded py-1 px-2 cursor-text">
                     </div>
                     <div class="border-r h-full px-1 py-1 flex items-center justify-center relative hover:bg-slate-100 transition-colors">
-                        <input type="date" value="${task.date}" onchange="updateInlineDate(${task.id}, 'start', this.value)" class="w-full h-full bg-transparent border-none outline-none text-center text-xs font-mono text-slate-600 input-ghost rounded cursor-text" title="Editar Inicio">
+                        <input type="date" value="${task.date}" onblur="updateInlineDate('${task.id}', 'start', this.value)" onkeydown="if(event.key==='Enter') this.blur()" class="w-full h-full bg-transparent border-none outline-none text-center text-xs font-mono text-slate-600 input-ghost rounded cursor-text" title="Editar Inicio">
                     </div>
                     <div class="border-r h-full px-1 py-1 flex items-center justify-center relative hover:bg-slate-100 transition-colors">
-                        <input type="number" min="1" value="${task.duration}" onchange="updateInlineDate(${task.id}, 'duration', this.value)" class="w-full h-full bg-transparent border-none outline-none text-center text-xs font-mono text-slate-600 input-ghost rounded cursor-text" title="Editar Días">
+                        <input type="number" min="1" value="${task.duration}" onblur="updateInlineDate('${task.id}', 'duration', this.value)" onkeydown="if(event.key==='Enter') this.blur()" class="w-full h-full bg-transparent border-none outline-none text-center text-xs font-mono text-slate-600 input-ghost rounded cursor-text" title="Editar Días">
                     </div>
                     <div class="h-full px-1 py-1 flex items-center justify-center relative hover:bg-slate-100 transition-colors">
-                        <input type="date" value="${endDate}" onchange="updateInlineDate(${task.id}, 'end', this.value)" class="w-full h-full bg-transparent border-none outline-none text-center text-xs font-mono text-slate-500 input-ghost rounded cursor-text" title="Editar Fin">
+                        <input type="date" value="${endDate}" onblur="updateInlineDate('${task.id}', 'end', this.value)" onkeydown="if(event.key==='Enter') this.blur()" class="w-full h-full bg-transparent border-none outline-none text-center text-xs font-mono text-slate-500 input-ghost rounded cursor-text" title="Editar Fin">
                     </div>
-                    <div class="h-full flex items-center justify-center"><button onclick="openContextMenu(event, ${task.id})" class="p-1.5 text-slate-400 hover:text-indigo-600"><i data-lucide="more-horizontal" class="w-4 h-4"></i></button></div>`;
+                    <div class="h-full flex items-center justify-center"><button onclick="openContextMenu(event, '${task.id}')" class="p-1.5 text-slate-400 hover:text-indigo-600"><i data-lucide="more-horizontal" class="w-4 h-4"></i></button></div>`;
                 editorBody.appendChild(row);
             });
             editorDiv.appendChild(editorBody);
@@ -868,9 +1085,9 @@
             labelBody.className = "overflow-hidden flex-1 bg-white pt-0";
             filteredTasks.forEach(task => {
                 labelBody.innerHTML += `
-                    <div onclick="openTaskModal(${task.id})" class="border-b border-slate-100 px-4 flex items-center gap-2 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors h-[44px] cursor-pointer ${task.pinned ? 'bg-amber-50/10' : ''}">
+                    <div onclick="openTaskModal('${task.id}')" class="border-b border-slate-100 px-4 flex items-center gap-2 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors h-[44px] cursor-pointer ${task.pinned ? 'bg-amber-50/10' : ''}">
                         <div class="w-2 h-2 rounded-full shrink-0 ${getClientColor(task.client).split(' ')[0]} shadow-sm"></div>
-                        <span class="truncate flex-1">${escapeHtml(task.program)}</span>
+                        <span class="truncate flex-1">${window.escapeHtml(task.program)}</span>
                         ${task.pinned ? '<i data-lucide="pin" class="w-3 h-3 text-amber-500 shrink-0" fill="currentColor"></i>' : ''}
                     </div>`;
             });
@@ -916,8 +1133,8 @@
                 const colorClass = `${getClientBadge(task.client).split(' ')[0]} ${getClientBadge(task.client).split(' ')[1]}`;
                 barsContainer.innerHTML += `
                     <div class="w-full relative border-b border-slate-100/50 transition-colors h-[44px]">
-                        <div onclick="openTaskModal(${task.id})" class="absolute top-1/2 -translate-y-1/2 h-7 rounded-md shadow-sm border border-white/20 ring-1 text-xs flex items-center px-2 whitespace-nowrap overflow-hidden cursor-pointer hover:shadow-md hover:scale-[1.01] transition-all ${colorClass} ${task.pinned ? 'ring-amber-300 ring-2 shadow-amber-200' : ''}" style="left:${left+2}px;width:${width-4}px" title="${escapeHtml(task.program)}">
-                             ${width>30?`<span class="font-bold text-[10px] truncate">${escapeHtml(task.program)}</span>`:''}
+                        <div onclick="openTaskModal('${task.id}')" class="absolute top-1/2 -translate-y-1/2 h-7 rounded-md shadow-sm border border-white/20 ring-1 text-xs flex items-center px-2 whitespace-nowrap overflow-hidden cursor-pointer hover:shadow-md hover:scale-[1.01] transition-all ${colorClass} ${task.pinned ? 'ring-amber-300 ring-2 shadow-amber-200' : ''}" style="left:${left+2}px;width:${width-4}px" title="${window.escapeHtml(task.program)}">
+                             ${width>30?`<span class="font-bold text-[10px] truncate">${window.escapeHtml(task.program)}</span>`:''}
                         </div>
                     </div>`;
             });
@@ -929,21 +1146,21 @@
         }
 
         // --- SETTINGS LOGIC ---
-        function openSettingsModal() {
+        window.openSettingsModal = function() {
             const modal = document.getElementById('settings-modal');
             const clientList = document.getElementById('settings-clients-list');
             const progList = document.getElementById('settings-programs-list');
             
             clientList.innerHTML = state.clients.map((c, i) => 
                 `<div class="flex justify-between items-center bg-white p-2 rounded border border-slate-100 shadow-sm text-sm text-slate-600">
-                    <span>${escapeHtml(c)}</span>
+                    <span>${window.escapeHtml(c)}</span>
                     <button onclick="removeClient(${i})" class="text-slate-300 hover:text-red-500 p-1"><i data-lucide="x" class="w-3 h-3"></i></button>
                 </div>`
             ).join('');
 
             progList.innerHTML = state.programTypes.map((p, i) => 
                 `<div class="flex justify-between items-center bg-white p-2 rounded border border-slate-100 shadow-sm text-sm text-slate-600">
-                    <span>${escapeHtml(p)}</span>
+                    <span>${window.escapeHtml(p)}</span>
                     <button onclick="removeProgramType(${i})" class="text-slate-300 hover:text-red-500 p-1"><i data-lucide="x" class="w-3 h-3"></i></button>
                 </div>`
             ).join('');
@@ -953,55 +1170,55 @@
                 modal.classList.add('modal-enter');
                 document.getElementById('settings-modal-content').classList.add('modal-content-enter');
             }, 10);
-            lucide.createIcons();
+            if(window.lucide) window.lucide.createIcons();
         }
 
-        function closeSettingsModal() {
+        window.closeSettingsModal = function() {
             const modal = document.getElementById('settings-modal');
             modal.classList.remove('modal-enter');
             document.getElementById('settings-modal-content').classList.remove('modal-content-enter');
             setTimeout(() => modal.classList.add('hidden'), 200);
         }
 
-        function addClientFromSettings() {
+        window.addClientFromSettings = function() {
             const input = document.getElementById('settings-new-client');
             const val = input.value.trim();
             if(val && !state.clients.includes(val)) {
                 state.clients.push(val);
-                saveSettings();
+                pushSettings();
                 input.value = '';
-                openSettingsModal(); 
+                window.openSettingsModal(); 
                 renderFilters();
-                showToast('Cliente añadido');
+                window.showToast('Cliente añadido');
             }
         }
 
-        function addProgramTypeFromSettings() {
+        window.addProgramTypeFromSettings = function() {
             const input = document.getElementById('settings-new-program');
             const val = input.value.trim();
             if(val && !state.programTypes.includes(val)) {
                 state.programTypes.push(val);
-                saveSettings();
+                pushSettings();
                 input.value = '';
-                openSettingsModal();
-                showToast('Programa añadido');
+                window.openSettingsModal();
+                window.showToast('Programa añadido');
             }
         }
 
-        function removeClient(index) {
+        window.removeClient = function(index) {
             if(confirm('¿Eliminar cliente de la lista?')) {
                 state.clients.splice(index, 1);
-                saveSettings();
-                openSettingsModal(); 
+                pushSettings();
+                window.openSettingsModal(); 
                 renderFilters();
             }
         }
 
-        function removeProgramType(index) {
+        window.removeProgramType = function(index) {
             if(confirm('¿Eliminar tipo de programa de la lista?')) {
                 state.programTypes.splice(index, 1);
-                saveSettings();
-                openSettingsModal(); 
+                pushSettings();
+                window.openSettingsModal(); 
             }
         }
 
@@ -1014,7 +1231,7 @@
             if (!startInput.value) return;
 
             if (trigger === 'duration') {
-                if (durInput.value === '') return; // Dejar escribir
+                if (durInput.value === '') return; 
                 let dur = parseInt(durInput.value);
                 if (isNaN(dur)) return;
                 if (dur < 1) dur = 1;
@@ -1044,9 +1261,8 @@
             const task = tasks.find(t => t.id === id);
             if(task && task[field] !== value) {
                 task[field] = value;
-                saveTasks();
-                renderApp();
-                showToast('Cambios guardados', 'success');
+                window.pushTask(task);
+                window.showToast('Cambios guardados', 'success');
             }
         };
 
@@ -1087,22 +1303,21 @@
             }
             
             if (changed) {
-                saveTasks();
-                renderApp();
-                showToast('Fechas actualizadas', 'success');
+                window.pushTask(task);
+                window.showToast('Fechas actualizadas', 'success');
             }
         };
 
 
         // --- TASK MODAL LOGIC ---
-        function openTaskModal(taskId = null) {
+        window.openTaskModal = function(taskId = null) {
             const modal = document.getElementById('task-modal');
             const title = document.getElementById('modal-title');
             const btnDelete = document.getElementById('btn-delete-task-modal');
             
             // Populate Selects
-            document.getElementById('modal-client').innerHTML = state.clients.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
-            document.getElementById('program-types-list').innerHTML = state.programTypes.map(p => `<option value="${escapeHtml(p)}">`).join('');
+            document.getElementById('modal-client').innerHTML = state.clients.map(c => `<option value="${window.escapeHtml(c)}">${window.escapeHtml(c)}</option>`).join('');
+            document.getElementById('program-types-list').innerHTML = state.programTypes.map(p => `<option value="${window.escapeHtml(p)}">`).join('');
             
             if (taskId) {
                 const task = tasks.find(t => t.id === taskId);
@@ -1148,10 +1363,10 @@
                 modal.classList.add('modal-enter');
                 document.getElementById('task-modal-content').classList.add('modal-content-enter');
             }, 10);
-            lucide.createIcons();
+            if(window.lucide) window.lucide.createIcons();
         }
 
-        function closeTaskModal() {
+        window.closeTaskModal = function() {
             const modal = document.getElementById('task-modal');
             modal.classList.remove('modal-enter');
             document.getElementById('task-modal-content').classList.remove('modal-content-enter');
@@ -1163,7 +1378,7 @@
             input.classList.add('hidden');
         }
 
-        function toggleNewClient() {
+        window.toggleNewClient = function() {
             const select = document.getElementById('client-select-container');
             const input = document.getElementById('modal-new-client');
             if (select.classList.contains('hidden')) {
@@ -1173,17 +1388,15 @@
             }
         }
 
-        function deleteTaskFromModal() {
+        window.deleteTaskFromModal = function() {
             if(confirm('¿Estás seguro de eliminar esta tarea?')) {
-                tasks = tasks.filter(t => t.id !== state.activeMenuTaskId);
-                saveTasks();
-                closeTaskModal();
-                renderApp();
-                showToast('Tarea eliminada', 'info');
+                window.removeTask(state.activeMenuTaskId);
+                window.closeTaskModal();
+                window.showToast('Tarea eliminada', 'info');
             }
         }
 
-        function saveTask() {
+        window.saveTask = function() {
             const idInput = document.getElementById('modal-task-id').value;
             const isEdit = !!idInput;
             
@@ -1193,7 +1406,7 @@
                 client = newClientInput.value.trim();
                 if (!state.clients.includes(client)) {
                     state.clients.push(client);
-                    saveSettings();
+                    pushSettings();
                     renderFilters(); // Refresh the main filter list
                 }
             }
@@ -1201,7 +1414,7 @@
             const pType = document.getElementById('modal-program-type').value.trim();
             if(pType && !state.programTypes.includes(pType)) {
                 state.programTypes.push(pType);
-                saveSettings();
+                pushSettings();
             }
 
             const startD = document.getElementById('modal-date').value || new Date().toISOString().split('T')[0];
@@ -1222,30 +1435,28 @@
             if (!taskData.program) { alert('Ingrese un nombre para la tarea'); return; }
 
             if (isEdit) {
-                const taskIndex = tasks.findIndex(t => t.id == idInput);
-                if (taskIndex > -1) {
-                    tasks[taskIndex] = { ...tasks[taskIndex], ...taskData };
-                    showToast('Tarea actualizada');
+                const existingTask = tasks.find(t => t.id == idInput);
+                if (existingTask) {
+                    window.pushTask({ ...existingTask, ...taskData });
+                    window.showToast('Tarea actualizada');
                 }
             } else {
-                const newTask = { id: Date.now(), ...taskData, completed: false, pinned: false, createdAt: Date.now() };
-                tasks.push(newTask);
+                const newTask = { id: `task_${Date.now()}`, ...taskData, completed: false, pinned: false, createdAt: Date.now() };
+                window.pushTask(newTask);
                 if(state.view !== 'completed') state.sortBy = 'recent';
-                showToast('Tarea creada exitosamente');
+                window.showToast('Tarea creada exitosamente');
             }
-            saveTasks();
-            closeTaskModal();
-            renderApp();
+            window.closeTaskModal();
         }
 
         // Shared Actions
-        function handleFilterClient(val) { state.filterClient = val; renderApp(); }
-        function handleSearch(val) { state.searchTerm = val; renderApp(); }
-        function handleFilterArea(val) { state.filterArea = val; renderApp(); }
-        function handleFilterPriority(val) { state.filterPriority = val; renderApp(); }
-        function handleSort(val) { state.sortBy = val; renderApp(); }
-        function handleZoom(val) { state.zoomLevel = parseInt(val); renderApp(); }
-        function setView(mode) { state.view = mode; renderApp(); }
+        window.handleFilterClient = function(val) { state.filterClient = val; renderApp(); }
+        window.handleSearch = function(val) { state.searchTerm = val; renderApp(); }
+        window.handleFilterArea = function(val) { state.filterArea = val; renderApp(); }
+        window.handleFilterPriority = function(val) { state.filterPriority = val; renderApp(); }
+        window.handleSort = function(val) { state.sortBy = val; renderApp(); }
+        window.handleZoom = function(val) { state.zoomLevel = parseInt(val); renderApp(); }
+        window.setView = function(mode) { state.view = mode; renderApp(); }
         
         window.changeMonth = function(dir) { state.calendarDate.setMonth(state.calendarDate.getMonth() + dir); renderApp(); };
         
@@ -1253,12 +1464,11 @@
             const t = tasks.find(x => x.id === id); 
             if(t) {
                 t.completed = !t.completed; 
-                saveTasks(); 
-                renderApp(); 
+                window.pushTask(t);
                 if(t.completed) {
-                    showToast('Tarea movida a Completadas', 'success');
+                    window.showToast('Tarea movida a Completadas', 'success');
                 } else {
-                    showToast('Tarea recuperada a pendientes', 'info');
+                    window.showToast('Tarea recuperada a pendientes', 'info');
                 }
             } 
         };
@@ -1268,9 +1478,8 @@
             const t = tasks.find(x => x.id === id);
             if(t) {
                 t.pinned = !t.pinned;
-                saveTasks();
-                renderApp();
-                showToast(t.pinned ? 'Tarea fijada' : 'Tarea desfijada', 'info');
+                window.pushTask(t);
+                window.showToast(t.pinned ? 'Tarea fijada' : 'Tarea desfijada', 'info');
             }
         };
 
@@ -1278,20 +1487,34 @@
             const t = tasks.find(x => x.id === state.activeMenuTaskId);
             if(t) {
                 t.pinned = !t.pinned;
-                saveTasks();
-                renderApp();
-                showToast(t.pinned ? 'Tarea fijada' : 'Tarea desfijada', 'info');
+                window.pushTask(t);
+                window.showToast(t.pinned ? 'Tarea fijada' : 'Tarea desfijada', 'info');
             }
         };
         
         window.openContextMenu = function(e, id) { e.stopPropagation(); state.activeMenuTaskId = id; const m=document.getElementById('context-menu'); const r=e.target.getBoundingClientRect(); m.style.top=`${r.bottom + window.scrollY}px`; m.style.left=`${r.left-150}px`; m.classList.remove('hidden'); };
-        window.duplicateTaskFromMenu = function() { const t=tasks.find(x=>x.id===state.activeMenuTaskId); if(t){ tasks.push({...t, id:Date.now(), program:t.program+' (Copia)', createdAt:Date.now()}); saveTasks(); state.sortBy='recent'; renderApp(); showToast('Duplicada'); } };
-        window.deleteTaskFromMenu = function() { if(confirm('¿Eliminar?')){ tasks=tasks.filter(x=>x.id!==state.activeMenuTaskId); saveTasks(); renderApp(); showToast('Eliminada','info'); } };
+        window.duplicateTaskFromMenu = function() { 
+            const t=tasks.find(x=>x.id===state.activeMenuTaskId); 
+            if(t){ 
+                window.pushTask({...t, id: `task_${Date.now()}`, program:t.program+' (Copia)', createdAt:Date.now()}); 
+                state.sortBy='recent'; 
+                window.showToast('Duplicada'); 
+            } 
+        };
+        window.deleteTaskFromMenu = function() { 
+            if(confirm('¿Eliminar?')){ 
+                window.removeTask(state.activeMenuTaskId);
+                window.showToast('Eliminada','info'); 
+            } 
+        };
         
-        document.addEventListener('click', () => document.getElementById('context-menu').classList.add('hidden'));
+        document.addEventListener('click', () => {
+            const menu = document.getElementById('context-menu');
+            if(menu) menu.classList.add('hidden');
+        });
         
-        // Initial Render
-        renderApp();
+        // Start App
+        initApp();
     </script>
 </body>
 </html>
